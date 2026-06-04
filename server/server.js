@@ -10,6 +10,10 @@ app.use(express.urlencoded({extended:true}));
 
 const connectDB = require("./src/config/db");
 connectDB();
+
+const documentRoutes = require("./src/routes/documentRoutes");
+app.use("/api/documents", documentRoutes);
+
 app.get('/' , (req,res)=>{
     res.send("Working fine");
 })
