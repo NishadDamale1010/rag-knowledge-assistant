@@ -3,6 +3,7 @@ const router = express.Router();
 
 const upload = require("../middleware/uploadMiddleware");
 const { uploadDocument } = require("../controllers/documentController");
+const { testSearch } = require("../controllers/chatController");
 const {
     generateEmbedding,
 } = require("../services/embeddingService");
@@ -35,4 +36,8 @@ router.get("/test-embedding", async (req, res) => {
         });
     }
 });
+
+// Search similar chunks
+router.post("/search", testSearch);
+
 module.exports = router;

@@ -12,6 +12,9 @@ const connectDB = require("./src/config/db");
 connectDB();
 
 const documentRoutes = require("./src/routes/documentRoutes");
+const chatRoutes = require("./src/routes/chatRoutes");
+
+app.use("/api/chat", chatRoutes);
 app.use("/api/documents", documentRoutes);
 
 app.get('/' , (req,res)=>{
