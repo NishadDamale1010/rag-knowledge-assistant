@@ -1,9 +1,12 @@
 const Document = require("../models/document");
-const { extractText, createChunks } = require("../services/pdfProcessor");
+const { extractText } = require("../services/pdfProcessor");
+const {
+    ingestDocument,
+} = require("../services/documentIngestionService");
 
 const uploadDocument = async (req, res) => {
     try {
-
+        // Check file upload
         if (!req.file) {
             return res.status(400).json({
                 success: false,
@@ -11,14 +14,13 @@ const uploadDocument = async (req, res) => {
             });
         }
 
-
+        // Extract PDF text for validation
         const pdfData = await extractText(req.file.path);
-        const chunks = await createChunks(pdfData.text);
+
         console.log("Pages:", pdfData.numPages);
-        console.log("Total Chunks:", chunks.length);
+        console.log("Text Length:", pdfData.text.length);
 
-        console.log(chunks[0]);
-
+        // Validate text exists
         if (!pdfData.text || !pdfData.text.trim()) {
             return res.status(400).json({
                 success: false,
@@ -26,7 +28,7 @@ const uploadDocument = async (req, res) => {
             });
         }
 
-
+        // Create document record
         const document = await Document.create({
             userId: "684000000000000000000001", // Replace after auth
             name: req.file.originalname,
@@ -36,18 +38,30 @@ const uploadDocument = async (req, res) => {
             status: "processing",
         });
 
+        // Ingest document
+        const result = await ingestDocument(
+            document._id,
+            req.file.path
+        );
+
         return res.status(201).json({
             success: true,
-            message: "PDF uploaded and processed successfully",
-            document,
+            message: "Document processed successfully",
+            documentId: document._id,
+            chunkCount: result.chunkCount,
+            status: "ready",
         });
 
     } catch (error) {
-        console.error("Upload Document Error:", error);
+        console.error(
+            "Upload Document Error:",
+            error
+        );
 
         return res.status(500).json({
             success: false,
-            message: error.message || "Upload failed",
+            message:
+                error.message || "Upload failed",
         });
     }
 };
