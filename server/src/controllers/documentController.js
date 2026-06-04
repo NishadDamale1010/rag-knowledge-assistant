@@ -1,9 +1,9 @@
 const Document = require("../models/document");
-const { extractText } = require("../services/pdfProcessor");
+const { extractText, createChunks } = require("../services/pdfProcessor");
 
 const uploadDocument = async (req, res) => {
     try {
-        
+
         if (!req.file) {
             return res.status(400).json({
                 success: false,
@@ -11,10 +11,14 @@ const uploadDocument = async (req, res) => {
             });
         }
 
-        
-        const pdfData = await extractText(req.file.path);
 
-        
+        const pdfData = await extractText(req.file.path);
+        const chunks = await createChunks(pdfData.text);
+        console.log("Pages:", pdfData.numPages);
+        console.log("Total Chunks:", chunks.length);
+
+        console.log(chunks[0]);
+
         if (!pdfData.text || !pdfData.text.trim()) {
             return res.status(400).json({
                 success: false,
@@ -22,7 +26,7 @@ const uploadDocument = async (req, res) => {
             });
         }
 
-        
+
         const document = await Document.create({
             userId: "684000000000000000000001", // Replace after auth
             name: req.file.originalname,
