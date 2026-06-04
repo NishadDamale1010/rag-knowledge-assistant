@@ -7,6 +7,9 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({extended:true}));
 
+
+const connectDB = require("./src/config/db");
+connectDB();
 app.get('/' , (req,res)=>{
     res.send("Working fine");
 })
