@@ -1,31 +1,49 @@
-const Document = require('../models/document');
+const Document = require("../models/document");
+const { extractText } = require("../services/pdfProcessor");
+
 const uploadDocument = async (req, res) => {
     try {
+        
         if (!req.file) {
             return res.status(400).json({
                 success: false,
-                message: "No file uploaded",
+                message: "No PDF file uploaded",
             });
         }
 
+        
+        const pdfData = await extractText(req.file.path);
+
+        
+        if (!pdfData.text || !pdfData.text.trim()) {
+            return res.status(400).json({
+                success: false,
+                message: "PDF contains no extractable text",
+            });
+        }
+
+        
         const document = await Document.create({
-            userId: "684000000000000000000001", // temporary
+            userId: "684000000000000000000001", // Replace after auth
             name: req.file.originalname,
+            filePath: req.file.path,
             size: req.file.size,
+            pageCount: pdfData.numPages,
             status: "processing",
         });
 
-        res.status(201).json({
+        return res.status(201).json({
             success: true,
-            message: "PDF uploaded successfully",
+            message: "PDF uploaded and processed successfully",
             document,
         });
-    } catch (error) {
-        console.error(error);
 
-        res.status(500).json({
+    } catch (error) {
+        console.error("Upload Document Error:", error);
+
+        return res.status(500).json({
             success: false,
-            message: "Upload failed",
+            message: error.message || "Upload failed",
         });
     }
 };
