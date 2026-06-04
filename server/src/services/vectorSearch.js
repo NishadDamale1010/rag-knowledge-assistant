@@ -40,6 +40,7 @@ const searchSimilarChunks = async (
                 $project: {
                     text: 1,
                     chunkIndex: 1,
+                    documentId: 1,
                     score: {
                         $meta: "vectorSearchScore",
                     },

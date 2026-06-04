@@ -11,9 +11,17 @@ const documentSchema = new mongoose.Schema(
             type: String,
             required: true,
         },
+        filePath: {
+            type: String,
+            required: true,
+        },
         size: {
             type: Number,
             required: true,
+        },
+        pageCount: {
+            type: Number,
+            default: 0,
         },
         status: {
             type: String,
@@ -24,8 +32,6 @@ const documentSchema = new mongoose.Schema(
             type: Number,
             default: 0,
         },
-
-
     }, { timestamps: true })
 
 module.exports = mongoose.model('Document' , documentSchema);

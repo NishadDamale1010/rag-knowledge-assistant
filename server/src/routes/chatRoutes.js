@@ -1,13 +1,17 @@
 const express = require("express");
+const authMiddleware = require("../middleware/authMiddleware");
 
 const {
     testSearch,
-    askQuestion
+    askQuestion,
+    streamAnswer
 } = require("../controllers/chatController");
 
 const router = express.Router();
 
-router.post("/test-search", testSearch);
-router.post("/ask", askQuestion);
+// Protected Routes
+router.post("/test-search", authMiddleware, testSearch);
+router.post("/ask", authMiddleware, askQuestion);
+router.post("/stream", authMiddleware, streamAnswer);
 
 module.exports = router;

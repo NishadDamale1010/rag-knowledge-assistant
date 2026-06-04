@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
+const authMiddleware = require("../middleware/authMiddleware");
 const upload = require("../middleware/uploadMiddleware");
 const { uploadDocument } = require("../controllers/documentController");
 const { testSearch } = require("../controllers/chatController");
@@ -8,9 +9,10 @@ const {
     generateEmbedding,
 } = require("../services/embeddingService");
 
-// Upload PDF
+// Upload PDF - Protected
 router.post(
     "/upload",
+    authMiddleware,
     upload.single("pdf"),
     uploadDocument
 );

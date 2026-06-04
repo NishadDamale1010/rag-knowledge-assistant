@@ -30,7 +30,7 @@ const uploadDocument = async (req, res) => {
 
         // Create document record
         const document = await Document.create({
-            userId: "684000000000000000000001", // Replace after auth
+            userId: req.user.id,
             name: req.file.originalname,
             filePath: req.file.path,
             size: req.file.size,
