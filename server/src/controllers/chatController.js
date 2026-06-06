@@ -146,9 +146,21 @@ const streamAnswer = async (
 
         res.end();
     } catch (error) {
-        console.error(error);
+        console.error("Stream Answer Error:", error);
 
-        res.status(500).end();
+        if (!res.headersSent) {
+            res.status(500).json({
+                success: false,
+                message: error.message || "Streaming failed",
+            });
+        } else {
+            res.write(
+                `data: ${JSON.stringify({
+                    error: error.message || "Streaming failed",
+                })}\n\n`
+            );
+            res.end();
+        }
     }
 };
 

@@ -3,7 +3,7 @@ const router = express.Router();
 
 const authMiddleware = require("../middleware/authMiddleware");
 const upload = require("../middleware/uploadMiddleware");
-const { uploadDocument } = require("../controllers/documentController");
+const { uploadDocument, getDocuments, deleteDocument } = require("../controllers/documentController");
 const { testSearch } = require("../controllers/chatController");
 const {
     generateEmbedding,
@@ -15,6 +15,20 @@ router.post(
     authMiddleware,
     upload.single("pdf"),
     uploadDocument
+);
+
+// Get all documents for user - Protected
+router.get(
+    "/",
+    authMiddleware,
+    getDocuments
+);
+
+// Delete document - Protected
+router.delete(
+    "/:id",
+    authMiddleware,
+    deleteDocument
 );
 
 // Test Embedding API

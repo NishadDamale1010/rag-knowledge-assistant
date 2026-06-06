@@ -188,4 +188,6 @@ const generateAnswer = async (context, question) => {
 
 module.exports = {
     generateAnswer,
+    systemPrompt,
+    formatMessages,
 };

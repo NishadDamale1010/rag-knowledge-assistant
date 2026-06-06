@@ -3,6 +3,8 @@ const { extractText } = require("../services/pdfProcessor");
 const {
     ingestDocument,
 } = require("../services/documentIngestionService");
+const Chunk = require("../models/chunk");
+const fs = require("fs");
 
 const uploadDocument = async (req, res) => {
     try {
@@ -66,6 +68,77 @@ const uploadDocument = async (req, res) => {
     }
 };
 
+const getDocuments = async (req, res) => {
+    try {
+        const documents = await Document.find(
+            { userId: req.user.id }
+        ).sort({ createdAt: -1 });
+
+        res.json({
+            success: true,
+            documents,
+        });
+    } catch (error) {
+        console.error("Get Documents Error:", error);
+        res.status(500).json({
+            success: false,
+            message: error.message || "Failed to fetch documents",
+        });
+    }
+};
+
+const deleteDocument = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Find document
+        const document = await Document.findById(id);
+
+        if (!document) {
+            return res.status(404).json({
+                success: false,
+                message: "Document not found",
+            });
+        }
+
+        // Check ownership
+        if (document.userId.toString() !== req.user.id) {
+            return res.status(403).json({
+                success: false,
+                message: "Not authorized to delete this document",
+            });
+        }
+
+        // Delete file if it exists
+        if (document.filePath && fs.existsSync(document.filePath)) {
+            try {
+                fs.unlinkSync(document.filePath);
+            } catch (err) {
+                console.error("Error deleting file:", err);
+            }
+        }
+
+        // Delete associated chunks
+        await Chunk.deleteMany({ documentId: id });
+
+        // Delete document
+        await Document.findByIdAndDelete(id);
+
+        res.json({
+            success: true,
+            message: "Document deleted successfully",
+        });
+    } catch (error) {
+        console.error("Delete Document Error:", error);
+        res.status(500).json({
+            success: false,
+            message: error.message || "Failed to delete document",
+        });
+    }
+};
+
 module.exports = {
     uploadDocument,
+    getDocuments,
+    deleteDocument,
 };
