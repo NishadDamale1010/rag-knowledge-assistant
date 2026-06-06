@@ -17,6 +17,7 @@ function useStreamChat() {
 
     const sendMessage = async (question, documentIds) => {
         let aiText = "";
+        let finalMessages = [];
 
         const ids = Array.isArray(documentIds)
             ? documentIds
@@ -34,7 +35,10 @@ function useStreamChat() {
                 timestamp: Date.now(),
             };
 
-            setMessages((prev) => [...prev, userMessage]);
+            setMessages((prev) => {
+                finalMessages = [...prev, userMessage];
+                return finalMessages;
+            });
 
             const response = await fetch(`${baseURL}/chat/stream`, {
                 method: "POST",
@@ -62,12 +66,19 @@ function useStreamChat() {
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
 
-            setMessages((prev) => [
-                ...prev,
-                { role: "assistant", content: "", timestamp: Date.now() },
-            ]);
+            const assistantMessage = {
+                role: "assistant",
+                content: "",
+                timestamp: Date.now(),
+            };
+
+            setMessages((prev) => {
+                finalMessages = [...prev, assistantMessage];
+                return finalMessages;
+            });
 
             let buffer = "";
+            let sources = null;
 
             const processLine = (line) => {
                 let data;
@@ -84,25 +95,10 @@ function useStreamChat() {
 
                 if (data.token) {
                     aiText += data.token;
-                    setMessages((prev) => {
-                        const updated = [...prev];
-                        updated[updated.length - 1] = {
-                            ...updated[updated.length - 1],
-                            content: aiText,
-                        };
-                        return updated;
-                    });
                 }
 
                 if (data.sources) {
-                    setMessages((prev) => {
-                        const updated = [...prev];
-                        updated[updated.length - 1] = {
-                            ...updated[updated.length - 1],
-                            sources: data.sources,
-                        };
-                        return updated;
-                    });
+                    sources = data.sources;
                 }
             };
 
@@ -118,16 +114,40 @@ function useStreamChat() {
                 for (const line of lines) {
                     processLine(line);
                 }
+
+                setMessages((prev) => {
+                    const updated = [...prev];
+                    updated[updated.length - 1] = {
+                        ...updated[updated.length - 1],
+                        content: aiText,
+                        ...(sources && { sources }),
+                    };
+                    finalMessages = updated;
+                    return updated;
+                });
             }
 
             buffer += decoder.decode();
             if (buffer.trim()) {
                 processLine(buffer);
             }
+
+            setMessages((prev) => {
+                const updated = [...prev];
+                updated[updated.length - 1] = {
+                    ...updated[updated.length - 1],
+                    content: aiText,
+                    ...(sources && { sources }),
+                };
+                finalMessages = updated;
+                return updated;
+            });
+
+            return finalMessages;
         } catch (error) {
             console.error(error);
 
-            if (aiText) return;
+            if (aiText) return finalMessages;
 
             const errorMessage =
                 error.message || "Sorry, something went wrong. Please try again.";
@@ -142,10 +162,11 @@ function useStreamChat() {
                         content: errorMessage,
                         isError: true,
                     };
+                    finalMessages = updated;
                     return updated;
                 }
 
-                return [
+                finalMessages = [
                     ...prev,
                     {
                         role: "assistant",
@@ -154,13 +175,16 @@ function useStreamChat() {
                         isError: true,
                     },
                 ];
+                return finalMessages;
             });
+
+            return finalMessages;
         } finally {
             setLoading(false);
         }
     };
 
-    return { messages, loading, sendMessage };
+    return { messages, setMessages, loading, sendMessage };
 }
 
 export default useStreamChat;

@@ -91,6 +91,49 @@ const getDocuments = async (req, res) => {
     }
 };
 
+const getDocumentFile = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const document = await Document.findById(id);
+
+        if (!document) {
+            return res.status(404).json({
+                success: false,
+                message: "Document not found",
+            });
+        }
+
+        if (document.userId.toString() !== req.user.id) {
+            return res.status(403).json({
+                success: false,
+                message: "Not authorized",
+            });
+        }
+
+        if (!document.filePath || !fs.existsSync(document.filePath)) {
+            return res.status(404).json({
+                success: false,
+                message: "PDF file not found",
+            });
+        }
+
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader(
+            "Content-Disposition",
+            `inline; filename="${document.name}"`
+        );
+
+        fs.createReadStream(document.filePath).pipe(res);
+    } catch (error) {
+        console.error("Get Document File Error:", error);
+        res.status(500).json({
+            success: false,
+            message: error.message || "Failed to load PDF",
+        });
+    }
+};
+
 const deleteDocument = async (req, res) => {
     try {
         const { id } = req.params;
@@ -144,5 +187,6 @@ const deleteDocument = async (req, res) => {
 module.exports = {
     uploadDocument,
     getDocuments,
+    getDocumentFile,
     deleteDocument,
 };

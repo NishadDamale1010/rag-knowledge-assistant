@@ -1,21 +1,35 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Send, Loader2 } from "lucide-react";
+import { ArrowLeft, Send, Loader2, FileText, ChevronDown } from "lucide-react";
 import toast from "react-hot-toast";
 import ChatWindow from "../components/ChatWindow";
+import ChatHistory from "../components/ChatHistory";
 import DocSidebar from "../components/DocSidebar";
+import PdfPreview from "../components/PdfPreview";
 import useStreamChat from "../hooks/useStreamChat";
 import useDocuments from "../hooks/useDocuments";
+import useChatHistory from "../hooks/useChatHistory";
 
 function Chat() {
     const { id } = useParams();
     const navigate = useNavigate();
     const isMulti = !id;
 
-    const { messages, loading, sendMessage } = useStreamChat();
+    const { messages, setMessages, loading, sendMessage } = useStreamChat();
     const { documents, loading: docsLoading, deleteDocument } = useDocuments();
+    const {
+        sessions,
+        loading: historyLoading,
+        saveSession,
+        loadSession,
+        deleteSession,
+    } = useChatHistory();
+
     const [question, setQuestion] = useState("");
     const [selectedIds, setSelectedIds] = useState([]);
+    const [sessionId, setSessionId] = useState(null);
+    const [showPreview, setShowPreview] = useState(true);
+    const [previewDocId, setPreviewDocId] = useState(null);
 
     useEffect(() => {
         if (id) {
@@ -24,8 +38,14 @@ function Chat() {
     }, [id]);
 
     useEffect(() => {
-        setQuestion("");
-    }, [id, selectedIds.join(",")]);
+        if (selectedIds.length === 1) {
+            setPreviewDocId(selectedIds[0]);
+        } else if (selectedIds.length > 1 && !selectedIds.includes(previewDocId)) {
+            setPreviewDocId(selectedIds[0]);
+        } else if (selectedIds.length === 0) {
+            setPreviewDocId(null);
+        }
+    }, [selectedIds, previewDocId]);
 
     const toggleSelect = (docId) => {
         setSelectedIds((prev) =>
@@ -47,6 +67,8 @@ function Chat() {
         selectedIds.includes(doc._id)
     );
 
+    const previewDoc = documents.find((doc) => doc._id === previewDocId);
+
     const getTitle = () => {
         if (isMulti) {
             if (selectedIds.length === 0) return "Multi-Document Chat";
@@ -66,6 +88,37 @@ function Chat() {
         return "Select documents from the sidebar";
     };
 
+    const handleNewChat = () => {
+        setSessionId(null);
+        setMessages([]);
+        setQuestion("");
+    };
+
+    const handleSelectHistory = async (historyId) => {
+        try {
+            const session = await loadSession(historyId);
+            setSessionId(session._id);
+            setMessages(session.messages || []);
+            setSelectedIds(
+                session.documentIds?.map((d) =>
+                    typeof d === "object" ? d._id?.toString() || d.toString() : d.toString()
+                ) || []
+            );
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to load chat");
+        }
+    };
+
+    const handleDeleteHistory = async (historyId) => {
+        if (window.confirm("Delete this chat?")) {
+            await deleteSession(historyId);
+            if (sessionId === historyId) {
+                handleNewChat();
+            }
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!question.trim() || loading) return;
@@ -77,7 +130,21 @@ function Chat() {
 
         const q = question.trim();
         setQuestion("");
-        await sendMessage(q, selectedIds);
+
+        const updatedMessages = await sendMessage(q, selectedIds);
+
+        if (updatedMessages?.length) {
+            try {
+                const saved = await saveSession({
+                    sessionId,
+                    documentIds: selectedIds,
+                    messages: updatedMessages,
+                });
+                setSessionId(saved._id);
+            } catch (error) {
+                console.error(error);
+            }
+        }
     };
 
     return (
@@ -90,6 +157,15 @@ function Chat() {
                 selectedIds={selectedIds}
                 onToggleSelect={toggleSelect}
                 onSelectAll={selectAll}
+            />
+
+            <ChatHistory
+                sessions={sessions}
+                loading={historyLoading}
+                activeId={sessionId}
+                onSelect={handleSelectHistory}
+                onNew={handleNewChat}
+                onDelete={handleDeleteHistory}
             />
 
             <div className="flex-1 flex flex-col min-w-0">
@@ -121,6 +197,45 @@ function Chat() {
                             </div>
                         )}
                     </div>
+
+                    {previewDocId && (
+                        <div className="flex items-center gap-2">
+                            {selectedIds.length > 1 && (
+                                <div className="relative">
+                                    <select
+                                        value={previewDocId}
+                                        onChange={(e) =>
+                                            setPreviewDocId(e.target.value)
+                                        }
+                                        className="appearance-none text-sm border border-slate-200 rounded-lg pl-3 pr-8 py-2 bg-white"
+                                    >
+                                        {selectedDocs.map((doc) => (
+                                            <option key={doc._id} value={doc._id}>
+                                                {doc.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown
+                                        size={14}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                                    />
+                                </div>
+                            )}
+
+                            <button
+                                type="button"
+                                onClick={() => setShowPreview(!showPreview)}
+                                className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
+                                    showPreview
+                                        ? "bg-indigo-100 text-indigo-700"
+                                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                                }`}
+                            >
+                                <FileText size={16} />
+                                {showPreview ? "Hide PDF" : "Show PDF"}
+                            </button>
+                        </div>
+                    )}
                 </header>
 
                 <ChatWindow messages={messages} loading={loading} />
@@ -162,6 +277,14 @@ function Chat() {
                     </div>
                 </form>
             </div>
+
+            {showPreview && previewDocId && previewDoc && (
+                <PdfPreview
+                    documentId={previewDocId}
+                    documentName={previewDoc.name}
+                    onClose={() => setShowPreview(false)}
+                />
+            )}
         </div>
     );
 }

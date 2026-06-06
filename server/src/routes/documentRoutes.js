@@ -3,7 +3,12 @@ const router = express.Router();
 
 const authMiddleware = require("../middleware/authMiddleware");
 const { handleUpload } = require("../middleware/uploadMiddleware");
-const { uploadDocument, getDocuments, deleteDocument } = require("../controllers/documentController");
+const {
+    uploadDocument,
+    getDocuments,
+    getDocumentFile,
+    deleteDocument,
+} = require("../controllers/documentController");
 const { testSearch } = require("../controllers/chatController");
 const {
     generateEmbedding,
@@ -22,6 +27,13 @@ router.get(
     "/",
     authMiddleware,
     getDocuments
+);
+
+// Get PDF file for preview - Protected
+router.get(
+    "/:id/file",
+    authMiddleware,
+    getDocumentFile
 );
 
 // Delete document - Protected
