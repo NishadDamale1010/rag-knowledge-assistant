@@ -17,11 +17,14 @@ import Badge from "../components/ui/Badge";
 import Skeleton from "../components/ui/Skeleton";
 import Button from "../components/ui/Button";
 import useDocuments from "../hooks/useDocuments";
+import useUsage from "../hooks/useUsage";
+import UsageBadge from "../components/UsageBadge";
 import PageTransition from "../components/layout/PageTransition";
 
 function Dashboard() {
     const navigate = useNavigate();
     const { documents, loading, deleteDocument, fetchDocuments } = useDocuments();
+    const { usage, fetchUsage } = useUsage();
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [commandOpen, setCommandOpen] = useState(false);
@@ -79,6 +82,8 @@ function Dashboard() {
                 <header className="h-14 shrink-0 flex items-center justify-between px-6 border-b border-slate-800 bg-slate-900/80 backdrop-blur-xl">
                     <h1 className="text-sm font-medium text-slate-300">Workspace</h1>
                     <div className="flex items-center gap-3">
+                        <UsageBadge usage={usage} type="chat" />
+                        <UsageBadge usage={usage} type="upload" />
                         <button
                             type="button"
                             onClick={() => setCommandOpen(true)}
@@ -162,7 +167,12 @@ function Dashboard() {
                                 <h3 className="text-sm font-medium text-slate-400 uppercase tracking-wider mb-4">
                                     Upload Document
                                 </h3>
-                                <FileUpload onUploadSuccess={fetchDocuments} />
+                                <FileUpload
+                                    onUploadSuccess={() => {
+                                        fetchDocuments();
+                                        fetchUsage();
+                                    }}
+                                />
                             </div>
 
                             <div>

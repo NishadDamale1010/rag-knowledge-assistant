@@ -4,10 +4,8 @@ import { getApiBaseUrl } from "../api/config";
 function parseSseData(line) {
     const trimmed = line.trim();
     if (!trimmed.startsWith("data:")) return null;
-
     const jsonStr = trimmed.slice(5).trim();
     if (!jsonStr) return null;
-
     return JSON.parse(jsonStr);
 }
 
@@ -18,10 +16,9 @@ function useStreamChat() {
     const sendMessage = async (question, documentIds) => {
         let aiText = "";
         let finalMessages = [];
+        let streamUsage = null;
 
-        const ids = Array.isArray(documentIds)
-            ? documentIds
-            : [documentIds];
+        const ids = Array.isArray(documentIds) ? documentIds : [documentIds];
 
         try {
             setLoading(true);
@@ -42,25 +39,28 @@ function useStreamChat() {
 
             const response = await fetch(`${baseURL}/chat/stream`, {
                 method: "POST",
+                credentials: "include",
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({
-                    question,
-                    documentIds: ids,
-                }),
+                body: JSON.stringify({ question, documentIds: ids }),
             });
 
             if (!response.ok) {
                 let message = "Chat request failed";
+                let usage = null;
                 try {
                     const errorBody = await response.json();
                     message = errorBody.message || message;
+                    usage = errorBody.usage;
                 } catch {
                     // response may not be JSON
                 }
-                throw new Error(message);
+                const err = new Error(message);
+                err.usage = usage;
+                err.status = response.status;
+                throw err;
             }
 
             const reader = response.body.getReader();
@@ -89,17 +89,10 @@ function useStreamChat() {
                 }
                 if (!data) return;
 
-                if (data.error) {
-                    throw new Error(data.error);
-                }
-
-                if (data.token) {
-                    aiText += data.token;
-                }
-
-                if (data.sources) {
-                    sources = data.sources;
-                }
+                if (data.error) throw new Error(data.error);
+                if (data.token) aiText += data.token;
+                if (data.sources) sources = data.sources;
+                if (data.usage) streamUsage = data.usage;
             };
 
             while (true) {
@@ -107,13 +100,10 @@ function useStreamChat() {
                 if (done) break;
 
                 buffer += decoder.decode(value, { stream: true });
-
                 const lines = buffer.split("\n");
                 buffer = lines.pop() || "";
 
-                for (const line of lines) {
-                    processLine(line);
-                }
+                for (const line of lines) processLine(line);
 
                 setMessages((prev) => {
                     const updated = [...prev];
@@ -128,9 +118,7 @@ function useStreamChat() {
             }
 
             buffer += decoder.decode();
-            if (buffer.trim()) {
-                processLine(buffer);
-            }
+            if (buffer.trim()) processLine(buffer);
 
             setMessages((prev) => {
                 const updated = [...prev];
@@ -143,11 +131,11 @@ function useStreamChat() {
                 return updated;
             });
 
-            return finalMessages;
+            return { messages: finalMessages, usage: streamUsage };
         } catch (error) {
             console.error(error);
 
-            if (aiText) return finalMessages;
+            if (aiText) return { messages: finalMessages, usage: streamUsage };
 
             const errorMessage =
                 error.message || "Sorry, something went wrong. Please try again.";
@@ -178,7 +166,8 @@ function useStreamChat() {
                 return finalMessages;
             });
 
-            return finalMessages;
+            error.usage = error.usage || null;
+            throw error;
         } finally {
             setLoading(false);
         }

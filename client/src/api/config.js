@@ -9,5 +9,6 @@ export function getApiBaseUrl() {
             : "http://localhost:5000")
     ).replace(/\/+$/, "");
 
-    return raw.endsWith("/api") ? raw : `${raw}/api`;
+    const origin = raw.endsWith("/api") ? raw.replace(/\/api$/, "") : raw;
+    return `${origin}/api/v1`;
 }

@@ -1,50 +1,66 @@
 const Document = require("../models/document");
-const { extractText } = require("../services/pdfProcessor");
-const {
-    ingestDocument,
-} = require("../services/documentIngestionService");
 const Chunk = require("../models/chunk");
+const { ingestDocument } = require("../services/documentIngestionService");
+const { scanAndValidateUpload } = require("../services/fileSecurityService");
+const { UPLOAD_DIR } = require("../middleware/uploadMiddleware");
+const asyncHandler = require("../utils/asyncHandler");
+const logger = require("../utils/logger");
 const fs = require("fs");
+const path = require("path");
 
-const uploadDocument = async (req, res) => {
-    try {
-        // Check file upload
-        if (!req.file) {
-            return res.status(400).json({
-                success: false,
-                message: "No PDF file uploaded",
-            });
-        }
-
-        // Extract PDF text for validation
-        const pdfData = await extractText(req.file.path);
-
-        console.log("Pages:", pdfData.numPages);
-        console.log("Text Length:", pdfData.text.length);
-
-        // Validate text exists
-        if (!pdfData.text || !pdfData.text.trim()) {
-            return res.status(400).json({
-                success: false,
-                message: "PDF contains no extractable text",
-            });
-        }
-
-        // Create document record
-        const document = await Document.create({
-            userId: req.user.id,
-            name: req.file.originalname,
-            filePath: req.file.path,
-            size: req.file.size,
-            pageCount: pdfData.numPages,
-            status: "processing",
+const uploadDocument = asyncHandler(async (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({
+            success: false,
+            message: "No PDF file uploaded",
+            code: "NO_FILE",
         });
+    }
 
-        // Ingest document
-        const result = await ingestDocument(
-            document._id,
-            req.file.path
-        );
+    const duplicate = await Document.findOne({
+        userId: req.user.id,
+        name: req.file.originalname,
+        size: req.file.size,
+    });
+
+    if (duplicate) {
+        fs.unlinkSync(req.file.path);
+        return res.status(409).json({
+            success: false,
+            message: "This document has already been uploaded",
+            code: "DUPLICATE_DOCUMENT",
+        });
+    }
+
+    const validation = await scanAndValidateUpload(req.file.path, UPLOAD_DIR);
+
+    if (!validation.valid) {
+        return res.status(400).json({
+            success: false,
+            message: validation.reason,
+            code: "INVALID_FILE",
+        });
+    }
+
+    const { pdfData } = validation;
+
+    const document = await Document.create({
+        userId: req.user.id,
+        name: req.file.originalname.replace(/[^a-zA-Z0-9._\s-]/g, "_").slice(0, 255),
+        filePath: validation.safePath || req.file.path,
+        size: req.file.size,
+        pageCount: pdfData.numPages,
+        status: "processing",
+    });
+
+    try {
+        const result = await ingestDocument(document._id, document.filePath);
+
+        logger.info("document", {
+            event: "upload_success",
+            userId: req.user.id,
+            documentId: document._id,
+        });
 
         return res.status(201).json({
             success: true,
@@ -52,137 +68,83 @@ const uploadDocument = async (req, res) => {
             documentId: document._id,
             chunkCount: result.chunkCount,
             status: "ready",
-        });
-
-    } catch (error) {
-        console.error("Upload Document Error:", error);
-
-        if (req.file?.path && fs.existsSync(req.file.path)) {
-            try {
-                fs.unlinkSync(req.file.path);
-            } catch (unlinkErr) {
-                console.error("Error cleaning up file:", unlinkErr);
-            }
-        }
-
-        return res.status(500).json({
-            success: false,
-            message: error.message || "Upload failed",
-        });
-    }
-};
-
-const getDocuments = async (req, res) => {
-    try {
-        const documents = await Document.find(
-            { userId: req.user.id }
-        ).sort({ createdAt: -1 });
-
-        res.json({
-            success: true,
-            documents,
+            usage: req.usage,
         });
     } catch (error) {
-        console.error("Get Documents Error:", error);
-        res.status(500).json({
+        await Document.findByIdAndDelete(document._id);
+        if (fs.existsSync(document.filePath)) fs.unlinkSync(document.filePath);
+        throw error;
+    }
+});
+
+const getDocuments = asyncHandler(async (req, res) => {
+    const documents = await Document.find({ userId: req.user.id }).sort({
+        createdAt: -1,
+    });
+
+    res.json({ success: true, documents });
+});
+
+const getDocumentFile = asyncHandler(async (req, res) => {
+    const document = await Document.findById(req.params.id);
+
+    if (!document) {
+        return res.status(404).json({
             success: false,
-            message: error.message || "Failed to fetch documents",
+            message: "Document not found",
         });
     }
-};
 
-const getDocumentFile = async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        const document = await Document.findById(id);
-
-        if (!document) {
-            return res.status(404).json({
-                success: false,
-                message: "Document not found",
-            });
-        }
-
-        if (document.userId.toString() !== req.user.id) {
-            return res.status(403).json({
-                success: false,
-                message: "Not authorized",
-            });
-        }
-
-        if (!document.filePath || !fs.existsSync(document.filePath)) {
-            return res.status(404).json({
-                success: false,
-                message: "PDF file not found",
-            });
-        }
-
-        res.setHeader("Content-Type", "application/pdf");
-        res.setHeader(
-            "Content-Disposition",
-            `inline; filename="${document.name}"`
-        );
-
-        fs.createReadStream(document.filePath).pipe(res);
-    } catch (error) {
-        console.error("Get Document File Error:", error);
-        res.status(500).json({
+    if (document.userId.toString() !== req.user.id) {
+        return res.status(403).json({
             success: false,
-            message: error.message || "Failed to load PDF",
+            message: "Not authorized",
+            code: "FORBIDDEN",
         });
     }
-};
 
-const deleteDocument = async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        // Find document
-        const document = await Document.findById(id);
-
-        if (!document) {
-            return res.status(404).json({
-                success: false,
-                message: "Document not found",
-            });
-        }
-
-        // Check ownership
-        if (document.userId.toString() !== req.user.id) {
-            return res.status(403).json({
-                success: false,
-                message: "Not authorized to delete this document",
-            });
-        }
-
-        // Delete file if it exists
-        if (document.filePath && fs.existsSync(document.filePath)) {
-            try {
-                fs.unlinkSync(document.filePath);
-            } catch (err) {
-                console.error("Error deleting file:", err);
-            }
-        }
-
-        // Delete associated chunks
-        await Chunk.deleteMany({ documentId: id });
-
-        // Delete document
-        await Document.findByIdAndDelete(id);
-
-        res.json({
-            success: true,
-            message: "Document deleted successfully",
-        });
-    } catch (error) {
-        console.error("Delete Document Error:", error);
-        res.status(500).json({
+    const safePath = path.resolve(document.filePath);
+    if (!fs.existsSync(safePath)) {
+        return res.status(404).json({
             success: false,
-            message: error.message || "Failed to delete document",
+            message: "PDF file not found",
         });
     }
-};
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `inline; filename="${document.name}"`);
+    res.setHeader("X-Content-Type-Options", "nosniff");
+
+    fs.createReadStream(safePath).pipe(res);
+});
+
+const deleteDocument = asyncHandler(async (req, res) => {
+    const document = await Document.findById(req.params.id);
+
+    if (!document) {
+        return res.status(404).json({
+            success: false,
+            message: "Document not found",
+        });
+    }
+
+    if (document.userId.toString() !== req.user.id) {
+        return res.status(403).json({
+            success: false,
+            message: "Not authorized",
+            code: "FORBIDDEN",
+        });
+    }
+
+    if (document.filePath && fs.existsSync(document.filePath)) {
+        fs.unlinkSync(document.filePath);
+    }
+
+    await Chunk.deleteMany({ documentId: req.params.id });
+    await Document.findByIdAndDelete(req.params.id);
+
+    res.json({ success: true, message: "Document deleted successfully" });
+});
 
 module.exports = {
     uploadDocument,

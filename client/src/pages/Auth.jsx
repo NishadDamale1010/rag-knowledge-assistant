@@ -111,7 +111,7 @@ function Auth() {
                         <Input
                             type="password"
                             name="password"
-                            placeholder="Password"
+                            placeholder="Password (min 8 chars, letter + number)"
                             value={formData.password}
                             onChange={handleChange}
                             required

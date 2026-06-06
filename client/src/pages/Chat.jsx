@@ -20,6 +20,8 @@ import Badge from "../components/ui/Badge";
 import useStreamChat from "../hooks/useStreamChat";
 import useDocuments from "../hooks/useDocuments";
 import useChatHistory from "../hooks/useChatHistory";
+import useUsage from "../hooks/useUsage";
+import UsageBadge from "../components/UsageBadge";
 
 function Chat() {
     const { id } = useParams();
@@ -34,6 +36,7 @@ function Chat() {
         loadSession,
         deleteSession,
     } = useChatHistory();
+    const { usage, fetchUsage, setUsage } = useUsage();
 
     const [question, setQuestion] = useState("");
     const [selectedIds, setSelectedIds] = useState([]);
@@ -126,18 +129,28 @@ function Chat() {
 
         const q = question.trim();
         setQuestion("");
-        const updated = await sendMessage(q, selectedIds);
 
-        if (updated?.length) {
-            try {
+        try {
+            const result = await sendMessage(q, selectedIds);
+
+            if (result?.usage) {
+                setUsage((prev) => ({ ...prev, chat: result.usage }));
+            } else {
+                fetchUsage();
+            }
+
+            if (result?.messages?.length) {
                 const saved = await saveSession({
                     sessionId,
                     documentIds: selectedIds,
-                    messages: updated,
+                    messages: result.messages,
                 });
                 setSessionId(saved._id);
-            } catch (err) {
-                console.error(err);
+            }
+        } catch (error) {
+            if (error.status === 429) {
+                toast.error(error.message);
+                if (error.usage) setUsage((prev) => ({ ...prev, chat: error.usage }));
             }
         }
     };
@@ -152,18 +165,19 @@ function Chat() {
         }
         setMessages(trimmed);
 
-        const updated = await sendMessage(lastUser.content, selectedIds);
-        if (updated?.length) {
-            try {
+        try {
+            const result = await sendMessage(lastUser.content, selectedIds);
+            if (result?.usage) setUsage((prev) => ({ ...prev, chat: result.usage }));
+            if (result?.messages?.length) {
                 const saved = await saveSession({
                     sessionId,
                     documentIds: selectedIds,
-                    messages: updated,
+                    messages: result.messages,
                 });
                 setSessionId(saved._id);
-            } catch (err) {
-                console.error(err);
             }
+        } catch (error) {
+            if (error.status === 429) toast.error(error.message);
         }
     };
 
@@ -235,6 +249,8 @@ function Chat() {
                     </div>
 
                     <div className="flex items-center gap-2">
+                        <UsageBadge usage={usage} type="chat" />
+
                         {selectedIds.length > 1 && previewDocId && (
                             <select
                                 value={previewDocId}

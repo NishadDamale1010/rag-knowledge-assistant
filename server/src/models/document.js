@@ -32,6 +32,11 @@ const documentSchema = new mongoose.Schema(
             type: Number,
             default: 0,
         },
-    }, { timestamps: true })
+    },
+    { timestamps: true }
+);
 
-module.exports = mongoose.model('Document' , documentSchema);
+documentSchema.index({ userId: 1, createdAt: -1 });
+documentSchema.index({ userId: 1, name: 1, size: 1 });
+
+module.exports = mongoose.model("Document", documentSchema);
