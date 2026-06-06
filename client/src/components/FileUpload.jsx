@@ -1,17 +1,18 @@
 import { useRef, useState } from "react";
-import { Upload, FileText, Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Upload, FileText, Loader2, CheckCircle2 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../api/axios";
 
-function FileUpload({ onUploadSuccess }) {
+function FileUpload({ onUploadSuccess, compact = false }) {
     const fileInputRef = useRef(null);
     const [uploading, setUploading] = useState(false);
     const [progress, setProgress] = useState(0);
     const [dragging, setDragging] = useState(false);
+    const [success, setSuccess] = useState(false);
 
     const uploadFile = async (file) => {
         if (!file) return;
-
         if (file.type !== "application/pdf") {
             toast.error("Only PDF files are allowed");
             return;
@@ -19,6 +20,7 @@ function FileUpload({ onUploadSuccess }) {
 
         try {
             setUploading(true);
+            setSuccess(false);
             setProgress(0);
 
             const formData = new FormData();
@@ -26,24 +28,17 @@ function FileUpload({ onUploadSuccess }) {
 
             const response = await api.post("/documents/upload", formData, {
                 headers: { "Content-Type": "multipart/form-data" },
-                onUploadProgress: (event) => {
-                    const percent = Math.round(
-                        (event.loaded * 100) / event.total
-                    );
-                    setProgress(percent);
+                onUploadProgress: (e) => {
+                    setProgress(Math.round((e.loaded * 100) / e.total));
                 },
             });
 
-            if (onUploadSuccess) {
-                onUploadSuccess(response.data);
-            }
-
-            toast.success("PDF uploaded and processed");
-            if (fileInputRef.current) {
-                fileInputRef.current.value = "";
-            }
+            setSuccess(true);
+            toast.success("PDF uploaded successfully");
+            onUploadSuccess?.(response.data);
+            if (fileInputRef.current) fileInputRef.current.value = "";
+            setTimeout(() => setSuccess(false), 3000);
         } catch (error) {
-            console.error(error);
             toast.error(error.response?.data?.message || "Upload failed");
         } finally {
             setUploading(false);
@@ -51,79 +46,108 @@ function FileUpload({ onUploadSuccess }) {
         }
     };
 
-    const handleFileChange = (e) => {
-        uploadFile(e.target.files[0]);
-    };
-
-    const handleDrop = (e) => {
-        e.preventDefault();
-        setDragging(false);
-        uploadFile(e.dataTransfer.files[0]);
-    };
-
-    return (
-        <div className="w-full">
-            <div
-                onDrop={handleDrop}
-                onDragOver={(e) => {
-                    e.preventDefault();
-                    setDragging(true);
-                }}
-                onDragLeave={() => setDragging(false)}
-                className={`relative border-2 border-dashed rounded-2xl p-10 text-center transition-all duration-200 ${
-                    dragging
-                        ? "border-indigo-500 bg-indigo-50 scale-[1.01]"
-                        : "border-slate-200 bg-white hover:border-indigo-300 hover:bg-slate-50"
-                }`}
-            >
-                <div className="mx-auto w-14 h-14 rounded-2xl bg-indigo-100 flex items-center justify-center mb-4">
-                    {uploading ? (
-                        <Loader2 className="w-7 h-7 text-indigo-600 animate-spin" />
-                    ) : (
-                        <Upload className="w-7 h-7 text-indigo-600" />
-                    )}
-                </div>
-
-                <h2 className="text-xl font-semibold text-slate-800">
-                    Upload a PDF
-                </h2>
-                <p className="text-slate-500 mt-2">
-                    Drag and drop your file here, or browse from your device
-                </p>
-
-                <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading}
-                    className="mt-6 inline-flex items-center gap-2 bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                    <FileText size={18} />
-                    Select PDF
-                </button>
-
+    if (compact) {
+        return (
+            <>
                 <input
                     type="file"
                     accept=".pdf"
                     hidden
                     ref={fileInputRef}
-                    onChange={handleFileChange}
+                    onChange={(e) => uploadFile(e.target.files[0])}
                 />
-
                 {uploading && (
-                    <div className="mt-8 max-w-sm mx-auto">
-                        <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                        <div className="bg-slate-800 rounded-2xl p-6 w-80 border border-slate-700">
+                            <Loader2 className="w-8 h-8 text-indigo-400 animate-spin mx-auto mb-3" />
+                            <p className="text-sm text-center text-slate-300">
+                                Processing... {progress}%
+                            </p>
+                            <div className="mt-3 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                                <div
+                                    className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all"
+                                    style={{ width: `${progress}%` }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </>
+        );
+    }
+
+    return (
+        <motion.div
+            onDrop={(e) => {
+                e.preventDefault();
+                setDragging(false);
+                uploadFile(e.dataTransfer.files[0]);
+            }}
+            onDragOver={(e) => {
+                e.preventDefault();
+                setDragging(true);
+            }}
+            onDragLeave={() => setDragging(false)}
+            animate={{
+                borderColor: dragging ? "#6366f1" : "rgba(51,65,85,0.5)",
+                scale: dragging ? 1.01 : 1,
+            }}
+            className="relative border-2 border-dashed rounded-2xl p-10 text-center bg-slate-800/40 transition-colors"
+        >
+            <AnimatePresence mode="wait">
+                {success ? (
+                    <motion.div
+                        key="success"
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.8, opacity: 0 }}
+                        className="flex flex-col items-center"
+                    >
+                        <CheckCircle2 className="w-12 h-12 text-emerald-500 mb-3" />
+                        <p className="text-emerald-400 font-medium">Upload complete!</p>
+                    </motion.div>
+                ) : uploading ? (
+                    <motion.div key="loading" className="flex flex-col items-center">
+                        <Loader2 className="w-10 h-10 text-indigo-400 animate-spin mb-4" />
+                        <p className="text-slate-300 mb-3">Processing... {progress}%</p>
+                        <div className="w-48 h-1.5 bg-slate-700 rounded-full overflow-hidden">
                             <div
-                                className="bg-indigo-600 h-2.5 rounded-full transition-all duration-300"
+                                className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all"
                                 style={{ width: `${progress}%` }}
                             />
                         </div>
-                        <p className="mt-2 text-sm text-slate-500">
-                            Processing... {progress}%
+                    </motion.div>
+                ) : (
+                    <motion.div key="idle" className="flex flex-col items-center">
+                        <div className="w-14 h-14 rounded-2xl bg-indigo-500/20 flex items-center justify-center mb-4">
+                            <Upload className="w-7 h-7 text-indigo-400" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-white mb-2">
+                            Upload a PDF
+                        </h3>
+                        <p className="text-slate-400 text-sm mb-6">
+                            Drag & drop or browse from your device
                         </p>
-                    </div>
+                        <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors"
+                        >
+                            <FileText size={16} />
+                            Select PDF
+                        </button>
+                    </motion.div>
                 )}
-            </div>
-        </div>
+            </AnimatePresence>
+
+            <input
+                type="file"
+                accept=".pdf"
+                hidden
+                ref={fileInputRef}
+                onChange={(e) => uploadFile(e.target.files[0])}
+            />
+        </motion.div>
     );
 }
 

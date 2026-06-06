@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
+import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Chat from "./pages/Chat";
@@ -13,14 +14,17 @@ function App() {
                 toastOptions={{
                     duration: 3000,
                     style: {
-                        borderRadius: "10px",
+                        borderRadius: "12px",
                         background: "#1e293b",
-                        color: "#f8fafc",
+                        color: "#f1f5f9",
+                        border: "1px solid #334155",
                     },
+                    success: { iconTheme: { primary: "#10b981", secondary: "#1e293b" } },
+                    error: { iconTheme: { primary: "#f43f5e", secondary: "#1e293b" } },
                 }}
             />
             <Routes>
-                <Route path="/" element={<Auth />} />
+                <Route path="/" element={<Landing />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route
                     path="/dashboard"

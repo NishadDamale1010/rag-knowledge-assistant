@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 import api from "../api/axios";
 
 function ProtectedRoute({ children }) {
@@ -7,12 +8,10 @@ function ProtectedRoute({ children }) {
 
     useEffect(() => {
         const token = localStorage.getItem("token");
-
         if (!token) {
             setStatus("unauthorized");
             return;
         }
-
         api.get("/auth/me")
             .then(() => setStatus("authorized"))
             .catch(() => {
@@ -23,14 +22,15 @@ function ProtectedRoute({ children }) {
 
     if (status === "checking") {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-50">
-                <div className="text-slate-500">Loading...</div>
+            <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 gap-3">
+                <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+                <p className="text-sm text-slate-500">Loading workspace...</p>
             </div>
         );
     }
 
     if (status === "unauthorized") {
-        return <Navigate to="/" replace />;
+        return <Navigate to="/auth" replace />;
     }
 
     return children;

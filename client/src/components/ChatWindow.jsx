@@ -1,8 +1,15 @@
 import { useEffect, useRef } from "react";
-import { MessageSquare } from "lucide-react";
+import { motion } from "framer-motion";
+import { Sparkles } from "lucide-react";
 import MessageBubble from "./MessageBubble";
 
-function ChatWindow({ messages, loading }) {
+function ChatWindow({
+    messages,
+    loading,
+    onRegenerate,
+    onShowSources,
+    selectedDocs = [],
+}) {
     const bottomRef = useRef(null);
 
     useEffect(() => {
@@ -10,41 +17,51 @@ function ChatWindow({ messages, loading }) {
     }, [messages, loading]);
 
     return (
-        <div className="flex-1 overflow-y-auto p-6">
-            <div className="max-w-3xl mx-auto space-y-4">
+        <div className="flex-1 overflow-y-auto">
+            <div className="max-w-3xl mx-auto px-4 py-6 space-y-6 min-h-full">
                 {messages.length === 0 ? (
-                    <div className="h-full min-h-[40vh] flex flex-col items-center justify-center text-center">
-                        <div className="w-14 h-14 rounded-2xl bg-indigo-100 flex items-center justify-center mb-4">
-                            <MessageSquare className="w-7 h-7 text-indigo-600" />
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex flex-col items-center justify-center min-h-[50vh] text-center"
+                    >
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-violet-500/20 border border-indigo-500/30 flex items-center justify-center mb-5">
+                            <Sparkles className="w-8 h-8 text-indigo-400" />
                         </div>
-                        <p className="text-slate-600 font-medium">
-                            Start a conversation
+                        <h2 className="text-xl font-semibold text-white mb-2">
+                            How can I help you today?
+                        </h2>
+                        <p className="text-slate-400 text-sm max-w-md mb-6">
+                            Ask anything about your uploaded documents. Answers are
+                            grounded in your PDFs with source citations.
                         </p>
-                        <p className="text-sm text-slate-400 mt-1 max-w-xs">
-                            Ask anything about the content in this document
-                        </p>
-                    </div>
+                        {selectedDocs.length > 0 && (
+                            <div className="flex flex-wrap gap-2 justify-center">
+                                {selectedDocs.map((doc) => (
+                                    <span
+                                        key={doc._id}
+                                        className="text-xs bg-slate-800 text-slate-400 px-3 py-1.5 rounded-lg border border-slate-700"
+                                    >
+                                        {doc.name}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+                    </motion.div>
                 ) : (
                     messages.map((message, index) => (
-                        <MessageBubble key={index} message={message} />
+                        <MessageBubble
+                            key={index}
+                            message={message}
+                            isLast={
+                                index === messages.length - 1 &&
+                                message.role === "assistant"
+                            }
+                            onRegenerate={onRegenerate}
+                            onShowSources={onShowSources}
+                        />
                     ))
                 )}
-
-                {loading && messages[messages.length - 1]?.role !== "assistant" && (
-                    <div className="flex justify-start">
-                        <div className="bg-white border border-slate-200 px-4 py-3 rounded-2xl shadow-sm">
-                            <div className="flex items-center gap-2 text-slate-500 text-sm">
-                                <span className="flex gap-1">
-                                    <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce [animation-delay:0ms]" />
-                                    <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce [animation-delay:150ms]" />
-                                    <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce [animation-delay:300ms]" />
-                                </span>
-                                Thinking...
-                            </div>
-                        </div>
-                    </div>
-                )}
-
                 <div ref={bottomRef} />
             </div>
         </div>

@@ -1,4 +1,6 @@
+import { motion } from "framer-motion";
 import { History, Plus, Trash2, MessageSquare } from "lucide-react";
+import Skeleton from "./ui/Skeleton";
 
 function ChatHistory({
     sessions,
@@ -7,79 +9,72 @@ function ChatHistory({
     onSelect,
     onNew,
     onDelete,
+    collapsed = false,
 }) {
+    if (collapsed) return null;
+
     return (
-        <aside className="w-64 bg-slate-50 border-r border-slate-200 flex flex-col shrink-0">
-            <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+        <aside className="w-60 bg-slate-900/50 border-r border-slate-800 flex flex-col shrink-0">
+            <div className="flex items-center justify-between p-4 border-b border-slate-800">
                 <div className="flex items-center gap-2">
-                    <History size={18} className="text-indigo-600" />
-                    <h3 className="font-semibold text-sm text-slate-800">
-                        Chat History
-                    </h3>
+                    <History size={16} className="text-indigo-400" />
+                    <h3 className="font-semibold text-sm text-slate-200">History</h3>
                 </div>
                 <button
                     type="button"
                     onClick={onNew}
-                    className="p-1.5 text-indigo-600 hover:bg-indigo-100 rounded-lg"
+                    className="p-1.5 text-indigo-400 hover:bg-indigo-500/20 rounded-lg transition-colors"
                     title="New chat"
                 >
-                    <Plus size={18} />
+                    <Plus size={16} />
                 </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-3">
+            <div className="flex-1 overflow-y-auto p-2">
                 {loading ? (
                     <div className="space-y-2">
                         {[1, 2, 3].map((i) => (
-                            <div
-                                key={i}
-                                className="h-16 bg-slate-200 rounded-xl animate-pulse"
-                            />
+                            <Skeleton key={i} className="h-16" />
                         ))}
                     </div>
                 ) : sessions.length === 0 ? (
-                    <div className="text-center py-10 px-2">
-                        <MessageSquare className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                        <p className="text-sm text-slate-500">No chats yet</p>
-                        <p className="text-xs text-slate-400 mt-1">
-                            Your conversations are saved here
-                        </p>
+                    <div className="text-center py-10 px-3">
+                        <MessageSquare className="w-7 h-7 text-slate-700 mx-auto mb-2" />
+                        <p className="text-xs text-slate-500">No chat history</p>
                     </div>
                 ) : (
-                    <div className="space-y-2">
+                    <div className="space-y-1">
                         {sessions.map((session) => (
-                            <div
+                            <motion.div
                                 key={session._id}
-                                className={`group relative rounded-xl border p-3 cursor-pointer transition-colors ${
-                                    activeId === session._id
-                                        ? "bg-indigo-50 border-indigo-200"
-                                        : "bg-white border-slate-200 hover:border-indigo-200"
-                                }`}
+                                whileHover={{ x: 2 }}
                                 onClick={() => onSelect(session._id)}
+                                className={`group relative p-3 rounded-xl cursor-pointer transition-all ${
+                                    activeId === session._id
+                                        ? "bg-indigo-500/15 border border-indigo-500/30"
+                                        : "hover:bg-slate-800/60 border border-transparent"
+                                }`}
                             >
-                                <p className="text-sm font-medium text-slate-800 truncate pr-6">
+                                <p className="text-sm font-medium text-slate-200 truncate pr-5">
                                     {session.title}
                                 </p>
-                                <p className="text-xs text-slate-500 mt-1 truncate">
+                                <p className="text-xs text-slate-500 mt-0.5 truncate">
                                     {session.preview}
                                 </p>
-                                <p className="text-xs text-slate-400 mt-1">
-                                    {new Date(
-                                        session.updatedAt
-                                    ).toLocaleDateString()}
+                                <p className="text-xs text-slate-600 mt-1">
+                                    {new Date(session.updatedAt).toLocaleDateString()}
                                 </p>
-
                                 <button
                                     type="button"
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         onDelete(session._id);
                                     }}
-                                    className="absolute top-2 right-2 p-1 text-slate-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    className="absolute top-2 right-2 p-1 text-slate-600 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity"
                                 >
-                                    <Trash2 size={14} />
+                                    <Trash2 size={12} />
                                 </button>
-                            </div>
+                            </motion.div>
                         ))}
                     </div>
                 )}
