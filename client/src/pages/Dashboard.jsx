@@ -8,6 +8,8 @@ import {
     Sparkles,
     ArrowRight,
     Command,
+    Clock,
+    TrendingUp,
 } from "lucide-react";
 import DocSidebar from "../components/DocSidebar";
 import FileUpload from "../components/FileUpload";
@@ -20,6 +22,41 @@ import useDocuments from "../hooks/useDocuments";
 import useUsage from "../hooks/useUsage";
 import UsageBadge from "../components/UsageBadge";
 import PageTransition from "../components/layout/PageTransition";
+
+const statConfigs = [
+    {
+        label: "Documents",
+        icon: FileText,
+        gradient: "from-blue-500/20 to-indigo-500/20",
+        border: "border-blue-500/20",
+        iconColor: "text-blue-400",
+        bg: "bg-blue-500/10",
+    },
+    {
+        label: "Total Pages",
+        icon: Layers,
+        gradient: "from-violet-500/20 to-purple-500/20",
+        border: "border-violet-500/20",
+        iconColor: "text-violet-400",
+        bg: "bg-violet-500/10",
+    },
+    {
+        label: "Ready",
+        icon: TrendingUp,
+        gradient: "from-emerald-500/20 to-green-500/20",
+        border: "border-emerald-500/20",
+        iconColor: "text-emerald-400",
+        bg: "bg-emerald-500/10",
+    },
+    {
+        label: "Chats",
+        icon: MessageSquare,
+        gradient: "from-cyan-500/20 to-teal-500/20",
+        border: "border-cyan-500/20",
+        iconColor: "text-cyan-400",
+        bg: "bg-cyan-500/10",
+    },
+];
 
 function Dashboard() {
     const navigate = useNavigate();
@@ -47,12 +84,7 @@ function Dashboard() {
     const totalPages = documents.reduce((sum, d) => sum + (d.pageCount || 0), 0);
     const readyDocs = documents.filter((d) => d.status === "ready").length;
 
-    const stats = [
-        { label: "Documents", value: documents.length, icon: FileText, color: "indigo" },
-        { label: "Total Pages", value: totalPages, icon: Layers, color: "violet" },
-        { label: "Ready", value: readyDocs, icon: Sparkles, color: "cyan" },
-        { label: "Chats", value: "∞", icon: MessageSquare, color: "emerald" },
-    ];
+    const statValues = [documents.length, totalPages, readyDocs, "∞"];
 
     const commands = [
         { label: "Go to Dashboard", icon: "dashboard", onSelect: () => navigate("/dashboard") },
@@ -64,6 +96,17 @@ function Dashboard() {
             onSelect: () => navigate(`/chat/${d._id}`),
         })),
     ];
+
+    const formatRelativeTime = (dateStr) => {
+        const diff = Date.now() - new Date(dateStr).getTime();
+        const mins = Math.floor(diff / 60000);
+        if (mins < 1) return "just now";
+        if (mins < 60) return `${mins}m ago`;
+        const hrs = Math.floor(mins / 60);
+        if (hrs < 24) return `${hrs}h ago`;
+        const days = Math.floor(hrs / 24);
+        return `${days}d ago`;
+    };
 
     return (
         <div className="h-screen flex bg-slate-900 overflow-hidden">
@@ -79,19 +122,26 @@ function Dashboard() {
             />
 
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-                <header className="h-14 shrink-0 flex items-center justify-between px-6 border-b border-slate-800 bg-slate-900/80 backdrop-blur-xl">
-                    <h1 className="text-sm font-medium text-slate-300">Workspace</h1>
+                {/* Header */}
+                <header className="h-14 shrink-0 flex items-center justify-between px-6 border-b border-slate-800/60 glass">
+                    <div className="flex items-center gap-3">
+                        <h1 className="text-sm font-semibold text-white">Workspace</h1>
+                        <Badge variant="muted" className="hidden sm:flex">
+                            <Sparkles size={10} />
+                            Pro
+                        </Badge>
+                    </div>
                     <div className="flex items-center gap-3">
                         <UsageBadge usage={usage} type="chat" />
                         <UsageBadge usage={usage} type="upload" />
                         <button
                             type="button"
                             onClick={() => setCommandOpen(true)}
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-slate-400 hover:text-slate-300 transition-colors"
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/60 border border-slate-700/50 text-xs text-slate-400 hover:text-slate-300 hover:border-slate-600 transition-all"
                         >
                             <Command size={14} />
                             <span className="hidden sm:inline">Command</span>
-                            <kbd className="hidden sm:inline bg-slate-900 px-1.5 py-0.5 rounded border border-slate-700 text-slate-500">
+                            <kbd className="hidden sm:inline bg-slate-900/80 px-1.5 py-0.5 rounded border border-slate-700/50 text-slate-500 text-[10px]">
                                 ⌘K
                             </kbd>
                         </button>
@@ -106,22 +156,24 @@ function Dashboard() {
 
                 <PageTransition className="flex-1 overflow-y-auto">
                     <div className="p-6 lg:p-8 max-w-6xl mx-auto space-y-8">
+                        {/* Hero banner */}
                         <motion.section
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600/20 via-violet-600/10 to-cyan-600/10 border border-indigo-500/20 p-8"
+                            className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600/15 via-violet-600/10 to-cyan-600/8 border border-indigo-500/15 p-8 lg:p-10"
                         >
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-[80px]" />
+                            <div className="absolute top-0 right-0 w-72 h-72 bg-indigo-500/8 rounded-full blur-[100px]" />
+                            <div className="absolute bottom-0 left-0 w-48 h-48 bg-violet-500/8 rounded-full blur-[80px]" />
                             <div className="relative">
-                                <Badge className="mb-4">
-                                    <Sparkles size={12} />
+                                <Badge className="mb-4 shimmer">
+                                    <Sparkles size={12} className="text-amber-400" />
                                     AI Knowledge Workspace
                                 </Badge>
-                                <h2 className="text-2xl lg:text-3xl font-bold text-white mb-2">
+                                <h2 className="text-2xl lg:text-4xl font-bold text-white mb-3 tracking-tight">
                                     Welcome back to{" "}
                                     <span className="gradient-text">Knowva</span>
                                 </h2>
-                                <p className="text-slate-400 max-w-lg mb-6">
+                                <p className="text-slate-400 max-w-lg mb-7 leading-relaxed">
                                     Upload PDFs, search semantically, and chat with your
                                     documents using RAG-powered AI.
                                 </p>
@@ -137,24 +189,29 @@ function Dashboard() {
                             </div>
                         </motion.section>
 
+                        {/* Stats grid */}
                         <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                            {stats.map((stat, i) => (
+                            {statConfigs.map((stat, i) => (
                                 <motion.div
                                     key={stat.label}
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: i * 0.05 }}
+                                    transition={{ delay: i * 0.06 }}
                                 >
-                                    <Card className="p-5">
+                                    <Card className="p-5 group hover:border-slate-600/50 transition-all duration-300">
                                         <div className="flex items-center justify-between mb-3">
-                                            <stat.icon size={18} className="text-indigo-400" />
-                                            <Badge variant="muted">{stat.label}</Badge>
+                                            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${stat.gradient} border ${stat.border} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
+                                                <stat.icon size={18} className={stat.iconColor} />
+                                            </div>
+                                            <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">
+                                                {stat.label}
+                                            </span>
                                         </div>
                                         {loading ? (
-                                            <Skeleton className="h-8 w-16" />
+                                            <Skeleton className="h-9 w-16" />
                                         ) : (
-                                            <p className="text-2xl font-bold text-white">
-                                                {stat.value}
+                                            <p className="text-3xl font-bold text-white tracking-tight">
+                                                {statValues[i]}
                                             </p>
                                         )}
                                     </Card>
@@ -162,9 +219,11 @@ function Dashboard() {
                             ))}
                         </section>
 
+                        {/* Upload + Recent docs */}
                         <section className="grid lg:grid-cols-2 gap-6">
                             <div id="upload-section">
-                                <h3 className="text-sm font-medium text-slate-400 uppercase tracking-wider mb-4">
+                                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
                                     Upload Document
                                 </h3>
                                 <FileUpload
@@ -177,16 +236,18 @@ function Dashboard() {
 
                             <div>
                                 <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-sm font-medium text-slate-400 uppercase tracking-wider">
+                                    <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-violet-500" />
                                         Recent Documents
                                     </h3>
                                     {documents.length > 0 && (
                                         <button
                                             type="button"
                                             onClick={() => navigate("/chat")}
-                                            className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
+                                            className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 group"
                                         >
-                                            View all <ArrowRight size={12} />
+                                            View all
+                                            <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
                                         </button>
                                     )}
                                 </div>
@@ -194,42 +255,67 @@ function Dashboard() {
                                 {loading ? (
                                     <div className="space-y-3">
                                         {[1, 2, 3].map((i) => (
-                                            <Skeleton key={i} className="h-16" />
+                                            <Skeleton key={i} className="h-[72px]" />
                                         ))}
                                     </div>
                                 ) : documents.length === 0 ? (
-                                    <Card className="p-10 text-center">
-                                        <FileText className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-                                        <p className="text-slate-400 text-sm">
-                                            No documents yet. Upload your first PDF.
+                                    <Card className="p-12 text-center">
+                                        <div className="w-14 h-14 rounded-2xl bg-slate-800 border border-slate-700/50 flex items-center justify-center mx-auto mb-4">
+                                            <FileText className="w-7 h-7 text-slate-600" />
+                                        </div>
+                                        <p className="text-slate-400 text-sm font-medium mb-1">
+                                            No documents yet
+                                        </p>
+                                        <p className="text-slate-500 text-xs">
+                                            Upload your first PDF to get started.
                                         </p>
                                     </Card>
                                 ) : (
                                     <div className="space-y-2">
-                                        {documents.slice(0, 5).map((doc) => (
-                                            <Card
+                                        {documents.slice(0, 5).map((doc, i) => (
+                                            <motion.div
                                                 key={doc._id}
-                                                hover
-                                                className="p-4 flex items-center gap-3 cursor-pointer group"
-                                                onClick={() => navigate(`/chat/${doc._id}`)}
+                                                initial={{ opacity: 0, x: 12 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                transition={{ delay: i * 0.05 }}
                                             >
-                                                <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center shrink-0">
-                                                    <FileText size={18} className="text-indigo-400" />
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-medium text-white truncate">
-                                                        {doc.name}
-                                                    </p>
-                                                    <p className="text-xs text-slate-500">
-                                                        {doc.pageCount || 0} pages ·{" "}
-                                                        {doc.status || "ready"}
-                                                    </p>
-                                                </div>
-                                                <ArrowRight
-                                                    size={16}
-                                                    className="text-slate-600 group-hover:text-indigo-400 transition-colors"
-                                                />
-                                            </Card>
+                                                <Card
+                                                    hover
+                                                    className="p-4 flex items-center gap-3 cursor-pointer group"
+                                                    onClick={() => navigate(`/chat/${doc._id}`)}
+                                                >
+                                                    <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500/15 to-violet-500/15 border border-indigo-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                                        <FileText size={18} className="text-indigo-400" />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-sm font-medium text-white truncate">
+                                                            {doc.name}
+                                                        </p>
+                                                        <div className="flex items-center gap-2 mt-0.5">
+                                                            <span className="text-xs text-slate-500">
+                                                                {doc.pageCount || 0} pages
+                                                            </span>
+                                                            <span className="text-slate-700">·</span>
+                                                            <span className={`text-xs ${doc.status === 'ready' ? 'text-emerald-400' : 'text-amber-400'}`}>
+                                                                {doc.status || "ready"}
+                                                            </span>
+                                                            {doc.createdAt && (
+                                                                <>
+                                                                    <span className="text-slate-700">·</span>
+                                                                    <span className="text-xs text-slate-600 flex items-center gap-1">
+                                                                        <Clock size={10} />
+                                                                        {formatRelativeTime(doc.createdAt)}
+                                                                    </span>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <ArrowRight
+                                                        size={16}
+                                                        className="text-slate-600 group-hover:text-indigo-400 group-hover:translate-x-0.5 transition-all"
+                                                    />
+                                                </Card>
+                                            </motion.div>
                                         ))}
                                     </div>
                                 )}

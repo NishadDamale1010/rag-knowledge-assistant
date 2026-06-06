@@ -8,6 +8,7 @@ import {
     FileText,
     Command,
     Layers,
+    Sparkles,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import ChatWindow from "../components/ChatWindow";
@@ -223,11 +224,12 @@ function Chat() {
             />
 
             <div className="flex-1 flex flex-col min-w-0">
-                <header className="h-14 shrink-0 flex items-center gap-3 px-4 border-b border-slate-800 bg-slate-900/80 backdrop-blur-xl">
+                {/* Header */}
+                <header className="h-14 shrink-0 flex items-center gap-3 px-4 border-b border-slate-800/60 glass">
                     <button
                         type="button"
                         onClick={() => navigate("/dashboard")}
-                        className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+                        className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800/60 transition-all"
                     >
                         <ArrowLeft size={18} />
                     </button>
@@ -255,7 +257,7 @@ function Chat() {
                             <select
                                 value={previewDocId}
                                 onChange={(e) => setPreviewDocId(e.target.value)}
-                                className="text-xs bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-slate-300 max-w-[140px]"
+                                className="text-xs bg-slate-800/60 border border-slate-700/50 rounded-lg px-2 py-1.5 text-slate-300 max-w-[140px] focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
                             >
                                 {selectedDocs.map((d) => (
                                     <option key={d._id} value={d._id}>
@@ -268,7 +270,7 @@ function Chat() {
                         <button
                             type="button"
                             onClick={() => setCommandOpen(true)}
-                            className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+                            className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800/60 transition-all"
                         >
                             <Command size={16} />
                         </button>
@@ -277,10 +279,10 @@ function Chat() {
                             <button
                                 type="button"
                                 onClick={() => setShowPreview((p) => !p)}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                                     showPreview
-                                        ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30"
-                                        : "bg-slate-800 text-slate-400 border border-slate-700"
+                                        ? "bg-indigo-500/15 text-indigo-300 border border-indigo-500/25"
+                                        : "bg-slate-800/60 text-slate-400 border border-slate-700/50"
                                 }`}
                             >
                                 <FileText size={14} />
@@ -290,8 +292,9 @@ function Chat() {
                     </div>
                 </header>
 
+                {/* Selected docs chips */}
                 {selectedIds.length > 0 && (
-                    <div className="px-4 py-2 border-b border-slate-800/50 flex flex-wrap gap-1.5">
+                    <div className="px-4 py-2.5 border-b border-slate-800/40 flex flex-wrap gap-1.5 bg-slate-900/50">
                         {selectedDocs.map((doc) => (
                             <button
                                 key={doc._id}
@@ -302,7 +305,7 @@ function Chat() {
                                     variant={
                                         previewDocId === doc._id ? "default" : "muted"
                                     }
-                                    className="cursor-pointer"
+                                    className="cursor-pointer hover:opacity-80 transition-opacity"
                                 >
                                     {doc.name}
                                 </Badge>
@@ -311,6 +314,7 @@ function Chat() {
                     </div>
                 )}
 
+                {/* Chat area */}
                 <ChatWindow
                     messages={messages}
                     loading={loading}
@@ -322,39 +326,48 @@ function Chat() {
                     }}
                 />
 
-                <form
-                    onSubmit={handleSubmit}
-                    className="p-4 border-t border-slate-800 bg-slate-900/80 backdrop-blur-xl"
-                >
-                    <div className="max-w-3xl mx-auto relative">
-                        <input
-                            type="text"
-                            value={question}
-                            onChange={(e) => setQuestion(e.target.value)}
-                            placeholder={
-                                selectedIds.length === 0
-                                    ? "Select documents to start chatting..."
-                                    : "Ask anything about your documents..."
-                            }
-                            disabled={loading || selectedIds.length === 0}
-                            className="w-full bg-slate-800 border border-slate-700 rounded-2xl pl-4 pr-24 py-3.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 disabled:opacity-50"
-                        />
-                        <button
-                            type="submit"
-                            disabled={loading || !question.trim() || selectedIds.length === 0}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-sm font-medium disabled:opacity-50 hover:from-indigo-500 hover:to-violet-500 transition-all"
-                        >
-                            {loading ? (
-                                <Loader2 size={16} className="animate-spin" />
-                            ) : (
-                                <Send size={16} />
-                            )}
-                        </button>
-                    </div>
-                    <p className="text-center text-xs text-slate-600 mt-2">
-                        Knowva uses RAG to answer from your documents only
-                    </p>
-                </form>
+                {/* Input area */}
+                <div className="p-4 border-t border-slate-800/60 glass">
+                    <form
+                        onSubmit={handleSubmit}
+                        className="max-w-3xl mx-auto"
+                    >
+                        <div className="relative group">
+                            <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500/20 to-violet-500/20 rounded-2xl blur opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
+                            <div className="relative flex items-center bg-slate-800/80 border border-slate-700/50 rounded-2xl group-focus-within:border-indigo-500/30 transition-all">
+                                <div className="pl-4 text-slate-500">
+                                    <Sparkles size={16} className={loading ? "animate-spin text-indigo-400" : ""} />
+                                </div>
+                                <input
+                                    type="text"
+                                    value={question}
+                                    onChange={(e) => setQuestion(e.target.value)}
+                                    placeholder={
+                                        selectedIds.length === 0
+                                            ? "Select documents to start chatting..."
+                                            : "Ask anything about your documents..."
+                                    }
+                                    disabled={loading || selectedIds.length === 0}
+                                    className="flex-1 bg-transparent pl-3 pr-3 py-3.5 text-sm text-white placeholder:text-slate-500 focus:outline-none disabled:opacity-50"
+                                />
+                                <button
+                                    type="submit"
+                                    disabled={loading || !question.trim() || selectedIds.length === 0}
+                                    className="mr-2 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-sm font-medium disabled:opacity-30 hover:from-indigo-500 hover:to-violet-500 transition-all duration-300 shadow-lg shadow-indigo-500/20 disabled:shadow-none"
+                                >
+                                    {loading ? (
+                                        <Loader2 size={16} className="animate-spin" />
+                                    ) : (
+                                        <Send size={16} />
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                        <p className="text-center text-[11px] text-slate-600 mt-2.5">
+                            Knowva uses RAG to answer from your documents only · Ctrl+K for commands
+                        </p>
+                    </form>
+                </div>
             </div>
 
             <SourcesPanel
