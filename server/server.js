@@ -3,9 +3,7 @@ require("dotenv").config();
 const express = require("express");
 const helmet = require("helmet");
 const cors = require("cors");
-const hpp = require("hpp");
 const cookieParser = require("cookie-parser");
-const mongoSanitize = require("express-mongo-sanitize");
 
 const { validateEnv } = require("./src/config/env");
 const { corsOptions } = require("./src/config/cors");
@@ -13,6 +11,7 @@ const connectDB = require("./src/config/db");
 const requestLogger = require("./src/middleware/requestLogger");
 const { errorHandler } = require("./src/middleware/errorHandler");
 const { apiLimiter } = require("./src/middleware/rateLimiter");
+const sanitizeMongo = require("./src/middleware/sanitizeMongo");
 const logger = require("./src/utils/logger");
 
 validateEnv();
@@ -27,20 +26,10 @@ app.use(helmet({
 }));
 
 app.use(cors(corsOptions));
-app.use(hpp());
 app.use(cookieParser());
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
-app.use(mongoSanitize({
-    replaceWith: "_",
-    onSanitize: ({ req, key }) => {
-        logger.warn("security", {
-            event: "nosql_injection_blocked",
-            key,
-            path: req.originalUrl,
-        });
-    },
-}));
+app.use(sanitizeMongo);
 
 app.use(requestLogger);
 app.use("/api", apiLimiter);

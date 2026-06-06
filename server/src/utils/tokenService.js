@@ -22,13 +22,16 @@ const verifyAccessToken = (token) => jwt.verify(token, process.env.JWT_SECRET);
 const verifyRefreshToken = (token) =>
     jwt.verify(token, process.env.JWT_REFRESH_SECRET);
 
-const getRefreshCookieOptions = () => ({
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-    path: "/api/v1/auth",
-});
+const getRefreshCookieOptions = () => {
+    const isProd = process.env.NODE_ENV === "production";
+    return {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: isProd ? "none" : "lax",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        path: "/api/v1/auth",
+    };
+};
 
 module.exports = {
     generateAccessToken,
