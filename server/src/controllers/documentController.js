@@ -55,15 +55,19 @@ const uploadDocument = async (req, res) => {
         });
 
     } catch (error) {
-        console.error(
-            "Upload Document Error:",
-            error
-        );
+        console.error("Upload Document Error:", error);
+
+        if (req.file?.path && fs.existsSync(req.file.path)) {
+            try {
+                fs.unlinkSync(req.file.path);
+            } catch (unlinkErr) {
+                console.error("Error cleaning up file:", unlinkErr);
+            }
+        }
 
         return res.status(500).json({
             success: false,
-            message:
-                error.message || "Upload failed",
+            message: error.message || "Upload failed",
         });
     }
 };

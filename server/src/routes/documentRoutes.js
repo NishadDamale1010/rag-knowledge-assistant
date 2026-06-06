@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const authMiddleware = require("../middleware/authMiddleware");
-const upload = require("../middleware/uploadMiddleware");
+const { handleUpload } = require("../middleware/uploadMiddleware");
 const { uploadDocument, getDocuments, deleteDocument } = require("../controllers/documentController");
 const { testSearch } = require("../controllers/chatController");
 const {
@@ -13,7 +13,7 @@ const {
 router.post(
     "/upload",
     authMiddleware,
-    upload.single("pdf"),
+    handleUpload,
     uploadDocument
 );
 

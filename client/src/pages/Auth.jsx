@@ -38,9 +38,14 @@ function Auth() {
             navigate("/dashboard");
         } catch (error) {
             console.error(error);
-            toast.error(
-                error.response?.data?.message || "Authentication failed"
-            );
+            const status = error.response?.status;
+            const message = error.response?.data?.message;
+
+            if (status === 401) {
+                toast.error(message || "Invalid email or password");
+            } else {
+                toast.error(message || "Authentication failed");
+            }
         } finally {
             setLoading(false);
         }
