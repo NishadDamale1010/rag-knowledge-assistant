@@ -15,8 +15,12 @@ function useStreamChat() {
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(false);
 
-    const sendMessage = async (question, documentId) => {
+    const sendMessage = async (question, documentIds) => {
         let aiText = "";
+
+        const ids = Array.isArray(documentIds)
+            ? documentIds
+            : [documentIds];
 
         try {
             setLoading(true);
@@ -38,7 +42,10 @@ function useStreamChat() {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({ question, documentId }),
+                body: JSON.stringify({
+                    question,
+                    documentIds: ids,
+                }),
             });
 
             if (!response.ok) {

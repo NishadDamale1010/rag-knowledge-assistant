@@ -33,6 +33,24 @@ function MessageBubble({ message }) {
                     )}
                 </p>
 
+                {message.sources?.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-slate-100">
+                        <p className="text-xs font-medium text-slate-500 mb-1">
+                            Sources
+                        </p>
+                        <div className="flex flex-wrap gap-1">
+                            {message.sources.map((src) => (
+                                <span
+                                    key={src.source}
+                                    className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded"
+                                >
+                                    [{src.source}] {src.documentName || "doc"}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {message.timestamp && (
                     <div
                         className={`mt-2 text-xs ${

@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { LogOut, Sparkles, Search, BookOpen, Bot } from "lucide-react";
+import { LogOut, Sparkles, Search, BookOpen, Bot, MessagesSquare } from "lucide-react";
 import FileUpload from "../components/FileUpload";
 import DocSidebar from "../components/DocSidebar";
 import useDocuments from "../hooks/useDocuments";
@@ -13,7 +13,7 @@ const features = [
     {
         icon: Bot,
         title: "AI Chat",
-        description: "Ask natural language questions and get grounded answers.",
+        description: "Ask questions about a single PDF or across multiple documents.",
     },
     {
         icon: Search,
@@ -67,6 +67,27 @@ function Dashboard() {
                 </header>
 
                 <div className="p-8 max-w-5xl mx-auto space-y-8">
+                    {documents.length > 0 && (
+                        <section className="bg-indigo-600 rounded-2xl p-6 flex items-center justify-between">
+                            <div>
+                                <h2 className="text-lg font-semibold text-white">
+                                    Multi-Document Chat
+                                </h2>
+                                <p className="text-indigo-100 text-sm mt-1">
+                                    Ask questions across multiple PDFs at once
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => navigate("/chat")}
+                                className="inline-flex items-center gap-2 bg-white text-indigo-600 px-5 py-2.5 rounded-xl font-medium hover:bg-indigo-50 transition-colors"
+                            >
+                                <MessagesSquare size={18} />
+                                Start Chat
+                            </button>
+                        </section>
+                    )}
+
                     <section>
                         <h2 className="text-lg font-semibold text-slate-800 mb-4">
                             Add a document
