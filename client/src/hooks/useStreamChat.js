@@ -1,11 +1,23 @@
 import { useState } from "react";
 import { getApiBaseUrl } from "../api/config";
 
+function parseSseData(line) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith("data:")) return null;
+
+    const jsonStr = trimmed.slice(5).trim();
+    if (!jsonStr) return null;
+
+    return JSON.parse(jsonStr);
+}
+
 function useStreamChat() {
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(false);
 
     const sendMessage = async (question, documentId) => {
+        let aiText = "";
+
         try {
             setLoading(true);
 
@@ -42,49 +54,79 @@ function useStreamChat() {
 
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
-            let aiText = "";
 
             setMessages((prev) => [
                 ...prev,
                 { role: "assistant", content: "", timestamp: Date.now() },
             ]);
 
+            let buffer = "";
+
+            const processLine = (line) => {
+                let data;
+                try {
+                    data = parseSseData(line);
+                } catch {
+                    return;
+                }
+                if (!data) return;
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                if (data.token) {
+                    aiText += data.token;
+                    setMessages((prev) => {
+                        const updated = [...prev];
+                        updated[updated.length - 1] = {
+                            ...updated[updated.length - 1],
+                            content: aiText,
+                        };
+                        return updated;
+                    });
+                }
+
+                if (data.sources) {
+                    setMessages((prev) => {
+                        const updated = [...prev];
+                        updated[updated.length - 1] = {
+                            ...updated[updated.length - 1],
+                            sources: data.sources,
+                        };
+                        return updated;
+                    });
+                }
+            };
+
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
 
-                const chunk = decoder.decode(value);
-                const lines = chunk.split("\n");
+                buffer += decoder.decode(value, { stream: true });
+
+                const lines = buffer.split("\n");
+                buffer = lines.pop() || "";
 
                 for (const line of lines) {
-                    if (!line.startsWith("data:")) continue;
-
-                    const data = JSON.parse(line.replace("data: ", ""));
-
-                    if (data.error) {
-                        throw new Error(data.error);
-                    }
-
-                    if (data.token) {
-                        aiText += data.token;
-
-                        setMessages((prev) => {
-                            const updated = [...prev];
-                            updated[updated.length - 1] = {
-                                ...updated[updated.length - 1],
-                                content: aiText,
-                            };
-                            return updated;
-                        });
-                    }
+                    processLine(line);
                 }
+            }
+
+            buffer += decoder.decode();
+            if (buffer.trim()) {
+                processLine(buffer);
             }
         } catch (error) {
             console.error(error);
+
+            if (aiText) return;
+
+            const errorMessage =
+                error.message || "Sorry, something went wrong. Please try again.";
+
             setMessages((prev) => {
                 const last = prev[prev.length - 1];
-                const errorMessage =
-                    error.message || "Sorry, something went wrong. Please try again.";
 
                 if (last?.role === "assistant" && !last.content) {
                     const updated = [...prev];
