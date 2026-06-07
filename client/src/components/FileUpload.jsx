@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Upload, FileText, Loader2, CheckCircle2 } from "lucide-react";
+import { useTheme } from "../context/ThemeContext";
 import toast from "react-hot-toast";
 import api from "../api/axios";
 
@@ -10,6 +11,8 @@ function FileUpload({ onUploadSuccess, compact = false }) {
     const [progress, setProgress] = useState(0);
     const [dragging, setDragging] = useState(false);
     const [success, setSuccess] = useState(false);
+    const { theme } = useTheme();
+    const isDark = theme === "dark";
 
     const uploadFile = async (file) => {
         if (!file) return;
@@ -58,12 +61,20 @@ function FileUpload({ onUploadSuccess, compact = false }) {
                 />
                 {uploading && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                        <div className="bg-slate-800 rounded-2xl p-6 w-80 border border-slate-700">
+                        <div className={`rounded-2xl p-6 w-80 border ${
+                            isDark
+                                ? "bg-slate-800 border-slate-700"
+                                : "bg-white border-slate-200 shadow-xl"
+                        }`}>
                             <Loader2 className="w-8 h-8 text-indigo-400 animate-spin mx-auto mb-3" />
-                            <p className="text-sm text-center text-slate-300">
+                            <p className={`text-sm text-center ${
+                                isDark ? "text-slate-300" : "text-slate-600"
+                            }`}>
                                 Processing... {progress}%
                             </p>
-                            <div className="mt-3 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                            <div className={`mt-3 h-1.5 rounded-full overflow-hidden ${
+                                isDark ? "bg-slate-700" : "bg-slate-200"
+                            }`}>
                                 <div
                                     className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all"
                                     style={{ width: `${progress}%` }}
@@ -89,10 +100,14 @@ function FileUpload({ onUploadSuccess, compact = false }) {
             }}
             onDragLeave={() => setDragging(false)}
             animate={{
-                borderColor: dragging ? "#6366f1" : "rgba(51,65,85,0.5)",
+                borderColor: dragging
+                    ? "#6366f1"
+                    : isDark ? "rgba(51,65,85,0.5)" : "rgba(203,213,225,0.8)",
                 scale: dragging ? 1.01 : 1,
             }}
-            className="relative border-2 border-dashed rounded-2xl p-10 text-center bg-slate-800/40 transition-colors"
+            className={`relative border-2 border-dashed rounded-2xl p-10 text-center transition-colors ${
+                isDark ? "bg-slate-800/40" : "bg-slate-50/50"
+            }`}
         >
             <AnimatePresence mode="wait">
                 {success ? (
@@ -104,13 +119,17 @@ function FileUpload({ onUploadSuccess, compact = false }) {
                         className="flex flex-col items-center"
                     >
                         <CheckCircle2 className="w-12 h-12 text-emerald-500 mb-3" />
-                        <p className="text-emerald-400 font-medium">Upload complete!</p>
+                        <p className="text-emerald-500 font-medium">Upload complete!</p>
                     </motion.div>
                 ) : uploading ? (
                     <motion.div key="loading" className="flex flex-col items-center">
                         <Loader2 className="w-10 h-10 text-indigo-400 animate-spin mb-4" />
-                        <p className="text-slate-300 mb-3">Processing... {progress}%</p>
-                        <div className="w-48 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                        <p className={`mb-3 ${isDark ? "text-slate-300" : "text-slate-600"}`}>
+                            Processing... {progress}%
+                        </p>
+                        <div className={`w-48 h-1.5 rounded-full overflow-hidden ${
+                            isDark ? "bg-slate-700" : "bg-slate-200"
+                        }`}>
                             <div
                                 className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all"
                                 style={{ width: `${progress}%` }}
@@ -119,13 +138,17 @@ function FileUpload({ onUploadSuccess, compact = false }) {
                     </motion.div>
                 ) : (
                     <motion.div key="idle" className="flex flex-col items-center">
-                        <div className="w-14 h-14 rounded-2xl bg-indigo-500/20 flex items-center justify-center mb-4">
-                            <Upload className="w-7 h-7 text-indigo-400" />
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 ${
+                            isDark ? "bg-indigo-500/20" : "bg-indigo-50"
+                        }`}>
+                            <Upload className={`w-7 h-7 ${isDark ? "text-indigo-400" : "text-indigo-500"}`} />
                         </div>
-                        <h3 className="text-lg font-semibold text-white mb-2">
+                        <h3 className={`text-lg font-semibold mb-2 ${
+                            isDark ? "text-white" : "text-slate-800"
+                        }`}>
                             Upload a PDF
                         </h3>
-                        <p className="text-slate-400 text-sm mb-6">
+                        <p className={`text-sm mb-6 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                             Drag & drop or browse from your device
                         </p>
                         <button

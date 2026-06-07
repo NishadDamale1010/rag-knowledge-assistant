@@ -12,6 +12,7 @@ import {
     AlertTriangle,
     RotateCcw,
 } from "lucide-react";
+import { useTheme } from "../context/ThemeContext";
 import api from "../api/axios";
 
 function PdfPreview({ documentId, documentName, onClose }) {
@@ -22,6 +23,8 @@ function PdfPreview({ documentId, documentName, onClose }) {
     const [zoom, setZoom] = useState(100);
     const [fullscreen, setFullscreen] = useState(false);
     const containerRef = useRef(null);
+    const { theme } = useTheme();
+    const isDark = theme === "dark";
 
     const loadPdf = async (cancelled = { current: false }) => {
         let objectUrl = null;
@@ -95,6 +98,12 @@ function PdfPreview({ documentId, documentName, onClose }) {
         }
     };
 
+    const btnClass = `p-1.5 rounded-lg transition-all ${
+        isDark
+            ? "text-slate-400 hover:text-white hover:bg-slate-800/80"
+            : "text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+    }`;
+
     return (
         <motion.aside
             initial={{ x: 400, opacity: 0 }}
@@ -102,101 +111,112 @@ function PdfPreview({ documentId, documentName, onClose }) {
             exit={{ x: 400, opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             ref={containerRef}
-            className={`glass-card flex flex-col shrink-0 ${
+            className={`flex flex-col shrink-0 border-l ${
                 fullscreen ? "fixed inset-0 z-50 w-full" : "w-[420px]"
+            } ${
+                isDark
+                    ? "bg-slate-800/50 backdrop-blur-xl border-slate-700/30"
+                    : "bg-white border-slate-200"
             }`}
         >
             {/* Header */}
-            <div className="sticky top-0 z-10 flex items-center justify-between gap-2 px-4 py-3 bg-slate-900/90 backdrop-blur-xl border-b border-slate-700/50">
+            <div className={`sticky top-0 z-10 flex items-center justify-between gap-2 px-4 py-3 backdrop-blur-xl border-b ${
+                isDark
+                    ? "bg-slate-900/90 border-slate-700/50"
+                    : "bg-white/90 border-slate-200"
+            }`}>
                 <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500/20 to-indigo-500/20 border border-cyan-500/30 flex items-center justify-center shrink-0">
-                        <FileText size={14} className="text-cyan-400" />
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${
+                        isDark
+                            ? "bg-gradient-to-br from-cyan-500/20 to-indigo-500/20 border-cyan-500/30"
+                            : "bg-indigo-50 border-indigo-200"
+                    }`}>
+                        <FileText size={14} className={isDark ? "text-cyan-400" : "text-indigo-500"} />
                     </div>
                     <div className="min-w-0">
-                        <p className="text-sm font-medium text-white truncate">
+                        <p className={`text-sm font-medium truncate ${
+                            isDark ? "text-white" : "text-slate-800"
+                        }`}>
                             {documentName}
                         </p>
-                        <p className="text-[11px] text-slate-500">PDF Preview</p>
+                        <p className={`text-[11px] ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                            PDF Preview
+                        </p>
                     </div>
                 </div>
                 <div className="flex items-center gap-0.5">
-                    <button
-                        type="button"
-                        onClick={() => setZoom((z) => Math.max(50, z - 25))}
-                        className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800/80 transition-all"
-                        title="Zoom out"
-                    >
+                    <button type="button" onClick={() => setZoom((z) => Math.max(50, z - 25))} className={btnClass} title="Zoom out">
                         <ZoomOut size={15} />
                     </button>
-                    <span className="text-xs text-slate-500 w-10 text-center font-medium tabular-nums">
+                    <span className={`text-xs w-10 text-center font-medium tabular-nums ${
+                        isDark ? "text-slate-500" : "text-slate-400"
+                    }`}>
                         {zoom}%
                     </span>
-                    <button
-                        type="button"
-                        onClick={() => setZoom((z) => Math.min(200, z + 25))}
-                        className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800/80 transition-all"
-                        title="Zoom in"
-                    >
+                    <button type="button" onClick={() => setZoom((z) => Math.min(200, z + 25))} className={btnClass} title="Zoom in">
                         <ZoomIn size={15} />
                     </button>
                     {blob && (
-                        <button
-                            type="button"
-                            onClick={handleDownload}
-                            className="p-1.5 text-slate-400 hover:text-emerald-400 rounded-lg hover:bg-slate-800/80 transition-all"
-                            title="Download"
-                        >
+                        <button type="button" onClick={handleDownload} className={`${btnClass} hover:!text-emerald-400`} title="Download">
                             <Download size={15} />
                         </button>
                     )}
-                    <button
-                        type="button"
-                        onClick={toggleFullscreen}
-                        className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800/80 transition-all"
-                        title={fullscreen ? "Exit fullscreen" : "Fullscreen"}
-                    >
+                    <button type="button" onClick={toggleFullscreen} className={btnClass} title={fullscreen ? "Exit fullscreen" : "Fullscreen"}>
                         {fullscreen ? <Minimize size={15} /> : <Maximize size={15} />}
                     </button>
-                    <div className="w-px h-5 bg-slate-700/50 mx-1" />
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800/80 transition-all"
-                        title="Close"
-                    >
+                    <div className={`w-px h-5 mx-1 ${isDark ? "bg-slate-700/50" : "bg-slate-200"}`} />
+                    <button type="button" onClick={onClose} className={`${btnClass} hover:!text-rose-400`} title="Close">
                         <X size={15} />
                     </button>
                 </div>
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-auto bg-slate-950/50">
+            <div className={`flex-1 overflow-auto ${isDark ? "bg-slate-950/50" : "bg-slate-50"}`}>
                 {loading ? (
                     <div className="h-full flex flex-col items-center justify-center gap-4">
-                        <div className="relative">
-                            <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
-                                <Loader2 className="w-6 h-6 text-indigo-400 animate-spin" />
-                            </div>
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border ${
+                            isDark
+                                ? "bg-indigo-500/10 border-indigo-500/20"
+                                : "bg-indigo-50 border-indigo-200"
+                        }`}>
+                            <Loader2 className="w-6 h-6 text-indigo-400 animate-spin" />
                         </div>
                         <div className="text-center">
-                            <p className="text-sm font-medium text-slate-300">Loading document</p>
-                            <p className="text-xs text-slate-500 mt-1">Fetching PDF from server...</p>
+                            <p className={`text-sm font-medium ${isDark ? "text-slate-300" : "text-slate-600"}`}>
+                                Loading document
+                            </p>
+                            <p className={`text-xs mt-1 ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                                Fetching PDF from server...
+                            </p>
                         </div>
                     </div>
                 ) : error ? (
                     <div className="h-full flex items-center justify-center p-8">
                         <div className="text-center max-w-xs">
-                            <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto mb-4">
+                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 border ${
+                                isDark
+                                    ? "bg-amber-500/10 border-amber-500/20"
+                                    : "bg-amber-50 border-amber-200"
+                            }`}>
                                 <AlertTriangle className="w-7 h-7 text-amber-400" />
                             </div>
-                            <p className="text-sm font-medium text-slate-200 mb-2">Preview Unavailable</p>
-                            <p className="text-xs text-slate-400 leading-relaxed mb-5">
+                            <p className={`text-sm font-medium mb-2 ${
+                                isDark ? "text-slate-200" : "text-slate-700"
+                            }`}>Preview Unavailable</p>
+                            <p className={`text-xs leading-relaxed mb-5 ${
+                                isDark ? "text-slate-400" : "text-slate-500"
+                            }`}>
                                 {error}
                             </p>
                             <button
                                 type="button"
                                 onClick={handleRetry}
-                                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sm text-slate-300 font-medium transition-all"
+                                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all border ${
+                                    isDark
+                                        ? "bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-300"
+                                        : "bg-white hover:bg-slate-50 border-slate-200 text-slate-600"
+                                }`}
                             >
                                 <RotateCcw size={14} />
                                 Retry

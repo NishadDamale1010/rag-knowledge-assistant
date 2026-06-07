@@ -10,11 +10,16 @@ import {
     Upload,
     LogOut,
     User,
+    Settings,
+    Star,
+    Archive,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useTheme } from "../context/ThemeContext";
 import Badge from "./ui/Badge";
 import Skeleton from "./ui/Skeleton";
 import Input from "./ui/Input";
+import ThemeToggle from "./ui/ThemeToggle";
 
 function DocSidebar({
     documents,
@@ -32,6 +37,9 @@ function DocSidebar({
     activeDocId,
 }) {
     const navigate = useNavigate();
+    const location = useLocation();
+    const { theme } = useTheme();
+    const isDark = theme === "dark";
 
     const filtered = documents.filter((doc) =>
         doc.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -46,25 +54,52 @@ function DocSidebar({
         navigate("/");
     };
 
+    const navItems = [
+        {
+            icon: MessageSquare,
+            label: "New Chat",
+            action: () => navigate("/chat"),
+            active: location.pathname === "/chat" && !multiSelect,
+            accent: true,
+        },
+    ];
+
+    const categories = [
+        { icon: FileText, label: "Documents", count: documents.length },
+        { icon: Star, label: "Favorites", count: 0 },
+        { icon: Archive, label: "Archive", count: 0 },
+    ];
+
     return (
         <motion.aside
-            animate={{ width: collapsed ? 72 : 288 }}
+            animate={{ width: collapsed ? 72 : 280 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="bg-slate-900 border-r border-slate-800 flex flex-col shrink-0 h-full overflow-hidden"
+            className={`flex flex-col shrink-0 h-full overflow-hidden border-r transition-colors duration-300 ${
+                isDark
+                    ? "bg-slate-900 border-slate-800"
+                    : "bg-white border-slate-200"
+            }`}
         >
-            <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+            {/* Logo + Collapse */}
+            <div className={`p-4 border-b flex items-center justify-between ${
+                isDark ? "border-slate-800" : "border-slate-100"
+            }`}>
                 {!collapsed && (
                     <div className="flex items-center gap-2.5 min-w-0">
                         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shrink-0">
                             <Brain size={16} className="text-white" />
                         </div>
-                        <span className="font-bold gradient-text truncate">Knowva</span>
+                        <span className="font-bold gradient-text truncate text-lg">Knowva</span>
                     </div>
                 )}
                 <button
                     type="button"
                     onClick={onToggleCollapse}
-                    className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                    className={`p-1.5 rounded-lg transition-colors ${
+                        isDark
+                            ? "text-slate-400 hover:text-white hover:bg-slate-800"
+                            : "text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+                    }`}
                 >
                     {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
                 </button>
@@ -72,32 +107,80 @@ function DocSidebar({
 
             {!collapsed && (
                 <>
-                    <div className="p-3 space-y-2">
+                    {/* New Chat Button */}
+                    <div className="p-3">
+                        <button
+                            type="button"
+                            onClick={() => navigate("/chat")}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-sm font-medium transition-all shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 active:scale-[0.98]"
+                        >
+                            <MessageSquare size={16} />
+                            New Chat
+                        </button>
+                    </div>
+
+                    {/* Search */}
+                    <div className="px-3 pb-2">
                         <div className="relative">
                             <Search
                                 size={14}
-                                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+                                className={`absolute left-3 top-1/2 -translate-y-1/2 ${
+                                    isDark ? "text-slate-500" : "text-slate-400"
+                                }`}
                             />
                             <Input
                                 value={searchQuery}
                                 onChange={(e) => onSearchChange?.(e.target.value)}
                                 placeholder="Search documents..."
-                                className="pl-9 py-2"
+                                className="pl-9 py-2 text-xs"
                             />
                         </div>
+                    </div>
+
+                    {/* Categories */}
+                    <div className="px-3 py-1">
+                        {categories.map((cat) => (
+                            <div
+                                key={cat.label}
+                                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors ${
+                                    isDark
+                                        ? "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
+                                        : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                                }`}
+                            >
+                                <cat.icon size={16} />
+                                <span className="flex-1">{cat.label}</span>
+                                <span className={`text-xs font-medium ${
+                                    isDark ? "text-slate-600" : "text-slate-400"
+                                }`}>
+                                    {cat.count}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Upload Button */}
+                    <div className="px-3 py-2">
                         <button
                             type="button"
                             onClick={onUploadClick}
-                            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 text-sm font-medium border border-indigo-500/30 transition-all"
+                            className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all ${
+                                isDark
+                                    ? "bg-indigo-600/15 hover:bg-indigo-600/25 text-indigo-300 border-indigo-500/30"
+                                    : "bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border-indigo-200"
+                            }`}
                         >
                             <Upload size={16} />
                             Upload PDF
                         </button>
                     </div>
 
-                    <div className="px-4 py-2 flex items-center justify-between">
-                        <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-                            Documents
+                    {/* Document List Header */}
+                    <div className={`px-4 py-2 flex items-center justify-between ${
+                        isDark ? "text-slate-500" : "text-slate-400"
+                    }`}>
+                        <span className="text-xs font-medium uppercase tracking-wider">
+                            Recent Chats
                         </span>
                         <Badge variant="muted">{documents.length}</Badge>
                     </div>
@@ -106,7 +189,11 @@ function DocSidebar({
                         <button
                             type="button"
                             onClick={onSelectAll}
-                            className="mx-3 mb-2 text-xs text-indigo-400 hover:text-indigo-300 font-medium"
+                            className={`mx-3 mb-2 text-xs font-medium ${
+                                isDark
+                                    ? "text-indigo-400 hover:text-indigo-300"
+                                    : "text-indigo-500 hover:text-indigo-600"
+                            }`}
                         >
                             {allSelected ? "Deselect all" : "Select all"}
                         </button>
@@ -114,6 +201,7 @@ function DocSidebar({
                 </>
             )}
 
+            {/* Document List */}
             <div className="flex-1 overflow-y-auto px-2 pb-2">
                 {loading ? (
                     <div className="space-y-2 p-2">
@@ -124,8 +212,12 @@ function DocSidebar({
                 ) : filtered.length === 0 ? (
                     !collapsed && (
                         <div className="text-center py-10 px-4">
-                            <FileText className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-                            <p className="text-sm text-slate-500">No documents</p>
+                            <FileText className={`w-8 h-8 mx-auto mb-2 ${
+                                isDark ? "text-slate-600" : "text-slate-300"
+                            }`} />
+                            <p className={`text-sm ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                                No documents
+                            </p>
                         </div>
                     )
                 ) : (
@@ -137,12 +229,18 @@ function DocSidebar({
                             return (
                                 <div
                                     key={doc._id}
-                                    className={`group flex items-center gap-2 p-2 rounded-xl transition-all cursor-pointer ${
+                                    className={`group flex items-center gap-2 p-2.5 rounded-xl transition-all cursor-pointer ${
                                         multiSelect && isSelected
-                                            ? "bg-indigo-500/15 border border-indigo-500/30"
+                                            ? isDark
+                                                ? "bg-indigo-500/15 border border-indigo-500/30"
+                                                : "bg-indigo-50 border border-indigo-200"
                                             : isActive
-                                              ? "bg-slate-800 border border-slate-700"
-                                              : "hover:bg-slate-800/60 border border-transparent"
+                                              ? isDark
+                                                  ? "bg-slate-800 border border-slate-700"
+                                                  : "bg-indigo-50 border border-indigo-200"
+                                              : isDark
+                                                  ? "hover:bg-slate-800/60 border border-transparent"
+                                                  : "hover:bg-slate-50 border border-transparent"
                                     }`}
                                     onClick={() => {
                                         if (multiSelect) onToggleSelect(doc._id);
@@ -161,8 +259,8 @@ function DocSidebar({
                                     <div
                                         className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
                                             isSelected
-                                                ? "bg-indigo-500/20"
-                                                : "bg-slate-800"
+                                                ? isDark ? "bg-indigo-500/20" : "bg-indigo-100"
+                                                : isDark ? "bg-slate-800" : "bg-slate-100"
                                         }`}
                                     >
                                         <FileText
@@ -170,18 +268,22 @@ function DocSidebar({
                                             className={
                                                 isSelected
                                                     ? "text-indigo-400"
-                                                    : "text-slate-400"
+                                                    : isDark ? "text-slate-400" : "text-slate-500"
                                             }
                                         />
                                     </div>
                                     {!collapsed && (
                                         <>
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-medium text-slate-200 truncate">
+                                                <p className={`text-sm font-medium truncate ${
+                                                    isDark ? "text-slate-200" : "text-slate-700"
+                                                }`}>
                                                     {doc.name}
                                                 </p>
                                                 {doc.pageCount && (
-                                                    <p className="text-xs text-slate-500">
+                                                    <p className={`text-xs ${
+                                                        isDark ? "text-slate-500" : "text-slate-400"
+                                                    }`}>
                                                         {doc.pageCount} pages
                                                     </p>
                                                 )}
@@ -194,7 +296,11 @@ function DocSidebar({
                                                             e.stopPropagation();
                                                             navigate(`/chat/${doc._id}`);
                                                         }}
-                                                        className="p-1.5 text-slate-400 hover:text-indigo-400"
+                                                        className={`p-1.5 ${
+                                                            isDark
+                                                                ? "text-slate-400 hover:text-indigo-400"
+                                                                : "text-slate-400 hover:text-indigo-500"
+                                                        }`}
                                                     >
                                                         <MessageSquare size={14} />
                                                     </button>
@@ -209,7 +315,11 @@ function DocSidebar({
                                                             )
                                                                 onDelete(doc._id);
                                                         }}
-                                                        className="p-1.5 text-slate-400 hover:text-rose-400"
+                                                        className={`p-1.5 ${
+                                                            isDark
+                                                                ? "text-slate-400 hover:text-rose-400"
+                                                                : "text-slate-400 hover:text-rose-500"
+                                                        }`}
                                                     >
                                                         <Trash2 size={14} />
                                                     </button>
@@ -224,11 +334,47 @@ function DocSidebar({
                 )}
             </div>
 
-            <div className="p-3 border-t border-slate-800">
+            {/* Bottom section - Settings & Logout */}
+            <div className={`p-3 border-t space-y-1 ${
+                isDark ? "border-slate-800" : "border-slate-100"
+            }`}>
+                {!collapsed && (
+                    <div className="flex items-center justify-between px-2 mb-1">
+                        <span className={`text-xs ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                            Theme
+                        </span>
+                        <ThemeToggle size="sm" />
+                    </div>
+                )}
+                {collapsed && (
+                    <div className="flex justify-center mb-1">
+                        <ThemeToggle size="sm" />
+                    </div>
+                )}
+                <button
+                    type="button"
+                    onClick={() => navigate("/dashboard")}
+                    className={`w-full flex items-center gap-2 p-2.5 rounded-xl transition-colors ${
+                        collapsed ? "justify-center" : ""
+                    } ${
+                        isDark
+                            ? "hover:bg-slate-800 text-slate-400 hover:text-slate-200"
+                            : "hover:bg-slate-50 text-slate-500 hover:text-slate-700"
+                    }`}
+                >
+                    <Settings size={16} />
+                    {!collapsed && <span className="text-sm">Settings</span>}
+                </button>
                 <button
                     type="button"
                     onClick={handleLogout}
-                    className={`w-full flex items-center gap-2 p-2.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-rose-400 transition-colors ${collapsed ? "justify-center" : ""}`}
+                    className={`w-full flex items-center gap-2 p-2.5 rounded-xl transition-colors ${
+                        collapsed ? "justify-center" : ""
+                    } ${
+                        isDark
+                            ? "hover:bg-slate-800 text-slate-400 hover:text-rose-400"
+                            : "hover:bg-rose-50 text-slate-500 hover:text-rose-500"
+                    }`}
                 >
                     {collapsed ? <LogOut size={18} /> : (
                         <>

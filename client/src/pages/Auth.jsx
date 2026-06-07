@@ -3,13 +3,17 @@ import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Brain, ArrowLeft, Eye, EyeOff, Mail, Lock, User as UserIcon } from "lucide-react";
 import toast from "react-hot-toast";
+import { useTheme } from "../context/ThemeContext";
 import api from "../api/axios";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
 import Card from "../components/ui/Card";
+import ThemeToggle from "../components/ui/ThemeToggle";
 
 function Auth() {
     const navigate = useNavigate();
+    const { theme } = useTheme();
+    const isDark = theme === "dark";
     const [isLogin, setIsLogin] = useState(true);
     const [formData, setFormData] = useState({ name: "", email: "", password: "" });
     const [loading, setLoading] = useState(false);
@@ -44,18 +48,29 @@ function Auth() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 relative overflow-hidden noise-bg">
+        <div className={`min-h-screen flex items-center justify-center p-4 relative overflow-hidden noise-bg transition-colors duration-300 ${
+            isDark ? "bg-slate-900" : "bg-slate-50"
+        }`}>
             {/* Ambient background */}
             <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-indigo-600/8 rounded-full blur-[120px]" />
-                <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-violet-600/6 rounded-full blur-[100px]" />
+                <div className={`absolute top-1/4 left-1/2 -translate-x-1/2 w-[700px] h-[500px] rounded-full blur-[120px] ${
+                    isDark ? "bg-indigo-600/8" : "bg-indigo-500/5"
+                }`} />
+                <div className={`absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full blur-[100px] ${
+                    isDark ? "bg-violet-600/6" : "bg-violet-500/3"
+                }`} />
                 <div
                     className="absolute inset-0 opacity-[0.02]"
                     style={{
-                        backgroundImage: "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)",
+                        backgroundImage: `linear-gradient(${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)"} 1px, transparent 1px), linear-gradient(90deg, ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)"} 1px, transparent 1px)`,
                         backgroundSize: "48px 48px",
                     }}
                 />
+            </div>
+
+            {/* Theme toggle */}
+            <div className="absolute top-5 right-5 z-20">
+                <ThemeToggle />
             </div>
 
             <motion.div
@@ -66,13 +81,19 @@ function Auth() {
             >
                 <Link
                     to="/"
-                    className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white mb-8 transition-colors group"
+                    className={`inline-flex items-center gap-2 text-sm mb-8 transition-colors group ${
+                        isDark
+                            ? "text-slate-400 hover:text-white"
+                            : "text-slate-500 hover:text-slate-800"
+                    }`}
                 >
                     <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
                     Back to home
                 </Link>
 
-                <Card className="p-8 lg:p-10 glass">
+                <Card className={`p-8 lg:p-10 ${
+                    isDark ? "glass" : "shadow-xl"
+                }`}>
                     {/* Logo & title */}
                     <div className="text-center mb-8">
                         <div className="relative inline-block">
@@ -81,13 +102,17 @@ function Auth() {
                             </div>
                         </div>
                         <h1 className="text-3xl font-bold gradient-text tracking-tight">Knowva</h1>
-                        <p className="text-slate-400 text-sm mt-2">
+                        <p className={`text-sm mt-2 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                             {isLogin ? "Sign in to your workspace" : "Create your account"}
                         </p>
                     </div>
 
                     {/* Tab switcher */}
-                    <div className="flex p-1 bg-slate-900/80 rounded-xl mb-7 border border-slate-800/50">
+                    <div className={`flex p-1 rounded-xl mb-7 border ${
+                        isDark
+                            ? "bg-slate-900/80 border-slate-800/50"
+                            : "bg-slate-100 border-slate-200"
+                    }`}>
                         {["Login", "Register"].map((tab, i) => (
                             <button
                                 key={tab}
@@ -95,14 +120,18 @@ function Auth() {
                                 onClick={() => setIsLogin(i === 0)}
                                 className={`relative flex-1 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 ${
                                     isLogin === (i === 0)
-                                        ? "text-white"
-                                        : "text-slate-500 hover:text-slate-300"
+                                        ? isDark ? "text-white" : "text-slate-800"
+                                        : isDark ? "text-slate-500 hover:text-slate-300" : "text-slate-400 hover:text-slate-600"
                                 }`}
                             >
                                 {isLogin === (i === 0) && (
                                     <motion.div
                                         layoutId="auth-tab"
-                                        className="absolute inset-0 bg-slate-800 rounded-lg border border-slate-700/50"
+                                        className={`absolute inset-0 rounded-lg border ${
+                                            isDark
+                                                ? "bg-slate-800 border-slate-700/50"
+                                                : "bg-white border-slate-200 shadow-sm"
+                                        }`}
                                         transition={{ type: "spring", damping: 25, stiffness: 400 }}
                                     />
                                 )}
@@ -124,7 +153,9 @@ function Auth() {
                                     className="overflow-hidden"
                                 >
                                     <div className="relative">
-                                        <UserIcon size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                                        <UserIcon size={16} className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${
+                                            isDark ? "text-slate-500" : "text-slate-400"
+                                        }`} />
                                         <Input
                                             type="text"
                                             name="name"
@@ -140,7 +171,9 @@ function Auth() {
                         </AnimatePresence>
 
                         <div className="relative">
-                            <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                            <Mail size={16} className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${
+                                isDark ? "text-slate-500" : "text-slate-400"
+                            }`} />
                             <Input
                                 type="email"
                                 name="email"
@@ -153,7 +186,9 @@ function Auth() {
                         </div>
 
                         <div className="relative">
-                            <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                            <Lock size={16} className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${
+                                isDark ? "text-slate-500" : "text-slate-400"
+                            }`} />
                             <Input
                                 type={showPassword ? "text" : "password"}
                                 name="password"
@@ -166,7 +201,11 @@ function Auth() {
                             <button
                                 type="button"
                                 onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                                className={`absolute right-3.5 top-1/2 -translate-y-1/2 transition-colors ${
+                                    isDark
+                                        ? "text-slate-500 hover:text-slate-300"
+                                        : "text-slate-400 hover:text-slate-600"
+                                }`}
                             >
                                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                             </button>
@@ -178,7 +217,9 @@ function Auth() {
                         </Button>
                     </form>
 
-                    <p className="text-center text-xs text-slate-600 mt-6">
+                    <p className={`text-center text-xs mt-6 ${
+                        isDark ? "text-slate-600" : "text-slate-400"
+                    }`}>
                         By continuing, you agree to Knowva's terms of service.
                     </p>
                 </Card>

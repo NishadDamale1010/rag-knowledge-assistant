@@ -9,8 +9,12 @@ import {
     Command,
     Layers,
     Sparkles,
+    Download,
+    RefreshCw,
+    Image as ImageIcon,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { useTheme } from "../context/ThemeContext";
 import ChatWindow from "../components/ChatWindow";
 import ChatHistory from "../components/ChatHistory";
 import DocSidebar from "../components/DocSidebar";
@@ -18,6 +22,7 @@ import PdfPreview from "../components/PdfPreview";
 import SourcesPanel from "../components/SourcesPanel";
 import CommandPalette from "../components/CommandPalette";
 import Badge from "../components/ui/Badge";
+import ThemeToggle from "../components/ui/ThemeToggle";
 import useStreamChat from "../hooks/useStreamChat";
 import useDocuments from "../hooks/useDocuments";
 import useChatHistory from "../hooks/useChatHistory";
@@ -27,6 +32,8 @@ import UsageBadge from "../components/UsageBadge";
 function Chat() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { theme } = useTheme();
+    const isDark = theme === "dark";
 
     const { messages, setMessages, loading, sendMessage } = useStreamChat();
     const { documents, loading: docsLoading, deleteDocument } = useDocuments();
@@ -197,7 +204,9 @@ function Chat() {
     ];
 
     return (
-        <div className="h-screen flex bg-slate-900 overflow-hidden">
+        <div className={`h-screen flex overflow-hidden transition-colors duration-300 ${
+            isDark ? "bg-slate-900" : "bg-gray-50"
+        }`}>
             <DocSidebar
                 documents={documents}
                 loading={docsLoading}
@@ -225,18 +234,28 @@ function Chat() {
 
             <div className="flex-1 flex flex-col min-w-0">
                 {/* Header */}
-                <header className="h-14 shrink-0 flex items-center gap-3 px-4 border-b border-slate-800/60 glass">
+                <header className={`h-14 shrink-0 flex items-center gap-3 px-4 border-b transition-colors duration-300 ${
+                    isDark
+                        ? "bg-slate-900/80 backdrop-blur-xl border-slate-800/60"
+                        : "bg-white/80 backdrop-blur-xl border-slate-200"
+                }`}>
                     <button
                         type="button"
                         onClick={() => navigate("/dashboard")}
-                        className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800/60 transition-all"
+                        className={`p-2 rounded-lg transition-all ${
+                            isDark
+                                ? "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                                : "text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+                        }`}
                     >
                         <ArrowLeft size={18} />
                     </button>
 
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                            <h1 className="text-sm font-semibold text-white truncate">
+                            <h1 className={`text-sm font-semibold truncate ${
+                                isDark ? "text-white" : "text-slate-800"
+                            }`}>
                                 {selectedIds.length > 1
                                     ? `${selectedIds.length} documents`
                                     : selectedDocs[0]?.name || "Chat"}
@@ -257,7 +276,11 @@ function Chat() {
                             <select
                                 value={previewDocId}
                                 onChange={(e) => setPreviewDocId(e.target.value)}
-                                className="text-xs bg-slate-800/60 border border-slate-700/50 rounded-lg px-2 py-1.5 text-slate-300 max-w-[140px] focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+                                className={`text-xs rounded-lg px-2 py-1.5 max-w-[140px] focus:outline-none focus:ring-1 focus:ring-indigo-500/50 ${
+                                    isDark
+                                        ? "bg-slate-800/60 border border-slate-700/50 text-slate-300"
+                                        : "bg-white border border-slate-200 text-slate-600"
+                                }`}
                             >
                                 {selectedDocs.map((d) => (
                                     <option key={d._id} value={d._id}>
@@ -267,10 +290,16 @@ function Chat() {
                             </select>
                         )}
 
+                        <ThemeToggle size="sm" />
+
                         <button
                             type="button"
                             onClick={() => setCommandOpen(true)}
-                            className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800/60 transition-all"
+                            className={`p-2 rounded-lg transition-all ${
+                                isDark
+                                    ? "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                                    : "text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+                            }`}
                         >
                             <Command size={16} />
                         </button>
@@ -281,8 +310,12 @@ function Chat() {
                                 onClick={() => setShowPreview((p) => !p)}
                                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                                     showPreview
-                                        ? "bg-indigo-500/15 text-indigo-300 border border-indigo-500/25"
-                                        : "bg-slate-800/60 text-slate-400 border border-slate-700/50"
+                                        ? isDark
+                                            ? "bg-indigo-500/15 text-indigo-300 border border-indigo-500/25"
+                                            : "bg-indigo-50 text-indigo-600 border border-indigo-200"
+                                        : isDark
+                                            ? "bg-slate-800/60 text-slate-400 border border-slate-700/50"
+                                            : "bg-slate-100 text-slate-500 border border-slate-200"
                                 }`}
                             >
                                 <FileText size={14} />
@@ -294,7 +327,11 @@ function Chat() {
 
                 {/* Selected docs chips */}
                 {selectedIds.length > 0 && (
-                    <div className="px-4 py-2.5 border-b border-slate-800/40 flex flex-wrap gap-1.5 bg-slate-900/50">
+                    <div className={`px-4 py-2.5 border-b flex flex-wrap gap-1.5 ${
+                        isDark
+                            ? "border-slate-800/40 bg-slate-900/50"
+                            : "border-slate-100 bg-slate-50/50"
+                    }`}>
                         {selectedDocs.map((doc) => (
                             <button
                                 key={doc._id}
@@ -327,15 +364,23 @@ function Chat() {
                 />
 
                 {/* Input area */}
-                <div className="p-4 border-t border-slate-800/60 glass">
+                <div className={`p-4 border-t transition-colors duration-300 ${
+                    isDark
+                        ? "bg-slate-900/80 backdrop-blur-xl border-slate-800/60"
+                        : "bg-white/80 backdrop-blur-xl border-slate-200"
+                }`}>
                     <form
                         onSubmit={handleSubmit}
                         className="max-w-3xl mx-auto"
                     >
                         <div className="relative group">
                             <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500/20 to-violet-500/20 rounded-2xl blur opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
-                            <div className="relative flex items-center bg-slate-800/80 border border-slate-700/50 rounded-2xl group-focus-within:border-indigo-500/30 transition-all">
-                                <div className="pl-4 text-slate-500">
+                            <div className={`relative flex items-center rounded-2xl transition-all ${
+                                isDark
+                                    ? "bg-slate-800/80 border border-slate-700/50 group-focus-within:border-indigo-500/30"
+                                    : "bg-white border border-slate-200 group-focus-within:border-indigo-400 shadow-sm"
+                            }`}>
+                                <div className={`pl-4 ${isDark ? "text-slate-500" : "text-slate-400"}`}>
                                     <Sparkles size={16} className={loading ? "animate-spin text-indigo-400" : ""} />
                                 </div>
                                 <input
@@ -345,25 +390,59 @@ function Chat() {
                                     placeholder={
                                         selectedIds.length === 0
                                             ? "Select documents to start chatting..."
-                                            : "Ask anything about your documents..."
+                                            : "Enter a prompt here..."
                                     }
                                     disabled={loading || selectedIds.length === 0}
-                                    className="flex-1 bg-transparent pl-3 pr-3 py-3.5 text-sm text-white placeholder:text-slate-500 focus:outline-none disabled:opacity-50"
+                                    className={`flex-1 bg-transparent pl-3 pr-3 py-3.5 text-sm focus:outline-none disabled:opacity-50 ${
+                                        isDark
+                                            ? "text-white placeholder:text-slate-500"
+                                            : "text-slate-900 placeholder:text-slate-400"
+                                    }`}
                                 />
-                                <button
-                                    type="submit"
-                                    disabled={loading || !question.trim() || selectedIds.length === 0}
-                                    className="mr-2 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-sm font-medium disabled:opacity-30 hover:from-indigo-500 hover:to-violet-500 transition-all duration-300 shadow-lg shadow-indigo-500/20 disabled:shadow-none"
-                                >
-                                    {loading ? (
-                                        <Loader2 size={16} className="animate-spin" />
-                                    ) : (
-                                        <Send size={16} />
-                                    )}
-                                </button>
+
+                                {/* Action buttons inside input */}
+                                <div className="flex items-center gap-1 pr-2">
+                                    <button
+                                        type="button"
+                                        className={`p-2 rounded-lg transition-colors ${
+                                            isDark
+                                                ? "text-slate-500 hover:text-slate-300"
+                                                : "text-slate-400 hover:text-slate-600"
+                                        }`}
+                                        title="Download chat"
+                                    >
+                                        <Download size={16} />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleRegenerate}
+                                        disabled={loading || messages.length === 0}
+                                        className={`p-2 rounded-lg transition-colors disabled:opacity-30 ${
+                                            isDark
+                                                ? "text-slate-500 hover:text-slate-300"
+                                                : "text-slate-400 hover:text-slate-600"
+                                        }`}
+                                        title="Regenerate"
+                                    >
+                                        <RefreshCw size={16} />
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={loading || !question.trim() || selectedIds.length === 0}
+                                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-sm font-medium disabled:opacity-30 hover:from-indigo-500 hover:to-violet-500 transition-all duration-300 shadow-lg shadow-indigo-500/20 disabled:shadow-none"
+                                    >
+                                        {loading ? (
+                                            <Loader2 size={16} className="animate-spin" />
+                                        ) : (
+                                            <Send size={16} />
+                                        )}
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                        <p className="text-center text-[11px] text-slate-600 mt-2.5">
+                        <p className={`text-center text-[11px] mt-2.5 ${
+                            isDark ? "text-slate-600" : "text-slate-400"
+                        }`}>
                             Knowva uses RAG to answer from your documents only · Ctrl+K for commands
                         </p>
                     </form>
