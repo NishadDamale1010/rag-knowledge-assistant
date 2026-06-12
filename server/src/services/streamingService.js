@@ -21,7 +21,7 @@ const createGroqStream = async (context, question) => {
     console.log("Streaming via Groq...");
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
     return groq.chat.completions.create({
-        model: process.env.GROQ_STREAM_MODEL || "llama-3.1-70b-versatile",
+        model: process.env.GROQ_STREAM_MODEL || "llama-3.3-70b-versatile",
         stream: true,
         temperature: 0.2,
         messages: buildMessages(context, question),
