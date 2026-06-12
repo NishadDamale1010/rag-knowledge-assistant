@@ -3,6 +3,7 @@ import remarkGfm from "remark-gfm";
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";
 import { useTheme } from "../context/ThemeContext";
+import { redactCodeFromText } from "../utils/contentSafety";
 
 function CodeBlock({ children, className }) {
     const [copied, setCopied] = useState(false);
@@ -56,6 +57,7 @@ function CodeBlock({ children, className }) {
 function MarkdownContent({ content }) {
     const { theme } = useTheme();
     const isDark = theme === "dark";
+    const safeContent = redactCodeFromText(content);
 
     return (
         <ReactMarkdown
@@ -121,7 +123,7 @@ function MarkdownContent({ content }) {
                 ),
             }}
         >
-            {content}
+            {safeContent}
         </ReactMarkdown>
     );
 }

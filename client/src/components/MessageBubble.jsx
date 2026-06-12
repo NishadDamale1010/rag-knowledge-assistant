@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTheme } from "../context/ThemeContext";
 import MarkdownContent from "./MarkdownContent";
 import Badge from "./ui/Badge";
+import { redactCodeFromText } from "../utils/contentSafety";
 
 function MessageBubble({ message, onRegenerate, onShowSources, isLast }) {
     const isUser = message.role === "user";
@@ -13,7 +14,7 @@ function MessageBubble({ message, onRegenerate, onShowSources, isLast }) {
     const isDark = theme === "dark";
 
     const handleCopy = async () => {
-        await navigator.clipboard.writeText(message.content);
+        await navigator.clipboard.writeText(redactCodeFromText(message.content));
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };

@@ -65,8 +65,15 @@ function SourcesPanel({ sources, open, onClose }) {
                                 <p className={`text-xs leading-relaxed line-clamp-4 ${
                                     isDark ? "text-slate-400" : "text-slate-500"
                                 }`}>
-                                    {src.text}
+                                    {src.excerpt || "Excerpt hidden for safety."}
                                 </p>
+                                {src.redacted && (
+                                    <p className={`text-[11px] mt-2 ${
+                                        isDark ? "text-slate-600" : "text-slate-400"
+                                    }`}>
+                                        Code-like content omitted
+                                    </p>
+                                )}
                                 {src.score && (
                                     <p className={`text-xs mt-2 ${
                                         isDark ? "text-slate-600" : "text-slate-400"
